@@ -150,14 +150,37 @@ for name, (x, y) in pos.items():
     h_data = data_registry[name]
     row = horse_db[name]
     is_god = (name == fastest_horse_name)
-    node_fill = "#050505" if row.get("Status") == "Dead" else h_data["color"]
+    is_dead = row.get("Status") == "Dead"
     
+    node_fill = "#050505" if is_dead else h_data["color"]
+    line_width = 3 if (is_god or is_dead) else 1.5
+    display_name = f"★ GOD HORSE: {name.upper()} ★" if is_god else name.upper()
+    
+    dna_sorted = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
+    dna_str = "<br>".join([f"  • {k}: {v*100:.1f}%" for k, v in dna_sorted if v > 0])
+    p1, p2 = row.get("Parent1"), row.get("Parent2")
+    parent_info = f"Parents: {p1} & {p2}<br>Breeding Roll: {h_data['mutation']:.2f}" if p1 and p2 else "Foundation Horse"
+
+    hover_label = (
+        f"<b>{display_name}</b> ({'DEAD' if is_dead else 'ALIVE'})<br>"
+        f"Speed: {row['Speed']}<br>"
+        f"{parent_info}<br>"
+        f"<b>Bloodline Density:</b><br>{dna_str}"
+    )
+
+    if is_god:
+        fig.add_trace(go.Scatter(
+            x=[x], y=[y], mode='markers',
+            marker=dict(size=35, color=h_data["color"], opacity=0.2),
+            hoverinfo='skip', showlegend=False, name="glow", customdata=[name]
+        ))
+
     fig.add_trace(go.Scatter(
         x=[x], y=[y], mode='markers+text',
-        text=[name.upper()], textposition="bottom center",
+        text=[display_name], textposition="bottom center",
         marker=dict(size=22 if is_god else 14, color=node_fill, symbol="star" if is_god else "circle",
-                    line=dict(width=2, color="#FFD700" if is_god else h_data["color"])),
-        hoverinfo="text", hovertext=f"{name}<br>Speed: {row['Speed']}",
+                    line=dict(width=line_width, color="#FFD700" if is_god else h_data["color"])),
+        hovertext=hover_label, hoverinfo="text",
         customdata=[name], name="node"
     ))
 
@@ -165,11 +188,12 @@ fig.update_layout(
     template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
     xaxis=dict(visible=False), yaxis=dict(visible=False),
     clickmode='event+select', showlegend=False,
-    margin=dict(t=50, b=50, l=50, r=50)
+    margin=dict(t=50, b=50, l=50, r=50),
+    hoverlabel=dict(bgcolor="#111", font_size=12, font_family="monospace")
 )
 
 # =====================================================
-# 4. ROBUST RESET & SELECTION JS
+# 4. GITHUB PAGES OPTIMIZED JS
 # =====================================================
 anc_json = json.dumps(ancestor_map)
 desc_json = json.dumps(final_desc_map)
@@ -211,6 +235,7 @@ window.addEventListener('load', function() {{
             var trace = graphDiv.data[i];
             if (trace.name === "line_parent") opacities.push(0.20);
             else if (trace.name === "line_child") opacities.push(0.45);
+            else if (trace.name === "glow") opacities.push(0.2);
             else opacities.push(1.0);
             widths.push(trace.name === "line_child" ? 2.5 : (trace.name === "line_parent" ? 1.5 : null));
         }}
@@ -219,7 +244,6 @@ window.addEventListener('load', function() {{
     }}
 
     function highlightLogic(selectedHorse) {{
-        // Logic: Reset happens internally by recalculating the entire update object
         var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
         var relatedSet = targetMap[selectedHorse] || [selectedHorse];
         
@@ -230,8 +254,8 @@ window.addEventListener('load', function() {{
             var data = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
             var isRelated = false;
 
-            if (trace.name === "node") {{
-                isRelated = relatedSet.includes(data);
+            if (trace.name === "node" || trace.name === "glow") {{
+                isRelated = (data && relatedSet.includes(data));
             }} 
             else if (trace.name.includes("line")) {{
                 if (currentMode === 'ancestors') {{
@@ -252,9 +276,7 @@ window.addEventListener('load', function() {{
         Plotly.restyle(graphDiv, update);
     }}
 
-    // CLICK HANDLER
     graphDiv.on('plotly_click', function(data){{
-        // Case 1: Clicking Background (Reset)
         if (!data || !data.points || data.points.length === 0) {{
             resetToDefault();
             return;
@@ -263,22 +285,16 @@ window.addEventListener('load', function() {{
         var rawData = data.points[0].customdata;
         var selectedHorse = (typeof rawData === 'object' && rawData.child) ? rawData.child : (Array.isArray(rawData) ? rawData[0] : rawData);
 
-        // Case 2: Clicking same node (Toggle off)
         if (currentHighlighted === selectedHorse) {{
             resetToDefault();
-        }} 
-        // Case 3: Clicking new node (Reset then Highlight)
-        else {{
+        }} else {{
             currentHighlighted = selectedHorse;
             highlightLogic(selectedHorse);
         }}
     }});
 
-    // DOUBLE CLICK HANDLER
     graphDiv.on('plotly_doubleclick', resetToDefault);
 
-    // CLICK OUTSIDE HANDLER (Canvas Background)
-    // Plotly often captures clicks, but this helps if clicking the padding
     graphDiv.addEventListener('mousedown', function(e) {{
         if (e.target.classList.contains('nsewdrag')) {{
              resetToDefault();
@@ -291,4 +307,4 @@ window.addEventListener('load', function() {{
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
 
-print("Opacity logic hardened. Tree now resets on background click or selection change.")
+print("Full build complete. Aesthetics restored, logic hardened.")
