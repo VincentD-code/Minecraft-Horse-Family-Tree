@@ -107,7 +107,7 @@ for name, row in horse_db.items():
         p1, p2 = pos[p1_n], pos[p2_n]
         fig.add_trace(go.Scatter(
             x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
-            line=dict(color="rgba(180,180,180,0.20)", width=1.5),
+            line=dict(color="rgba(180,180,180,0.25)", width=1.5), # 0.25 Opacity
             hoverinfo='skip', showlegend=False,
             customdata=[name], name="line_parent"
         ))
@@ -139,7 +139,6 @@ for name, (x, y) in pos.items():
     line_width = 3 if (is_god or is_dead) else 1.5
     display_name = f"★ GOD HORSE: {name.upper()} ★" if is_god else name.upper()
     
-    # Tooltip Setup - RESTORED
     dna_sorted = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
     dna_str = "<br>".join([f"  • {k}: {v*100:.1f}%" for k, v in dna_sorted if v > 0])
     p1, p2 = row.get("Parent1"), row.get("Parent2")
@@ -150,12 +149,7 @@ for name, (x, y) in pos.items():
     else:
         parent_info = "Foundation Horse"
 
-    hover_label = (
-        f"<b>{display_name}</b> ({'DEAD' if is_dead else 'ALIVE'})<br>"
-        f"Speed: {row['Speed']}<br>"
-        f"{parent_info}<br>"
-        f"<b>Bloodline Density:</b><br>{dna_str}"
-    )
+    hover_label = f"<b>{display_name}</b><br>Speed: {row['Speed']}<br>{parent_info}<br><b>DNA:</b><br>{dna_str}"
 
     if is_god:
         fig.add_trace(go.Scatter(
@@ -167,25 +161,21 @@ for name, (x, y) in pos.items():
     fig.add_trace(go.Scatter(
         x=[x], y=[y], mode='markers+text',
         text=[display_name], textposition="bottom center",
-        marker=dict(size=22 if is_god else 14, 
-                    color=node_fill, 
+        marker=dict(size=22 if is_god else 14, color=node_fill, 
                     symbol="star" if is_god else "circle",
                     line=dict(width=line_width, color="#FFD700" if is_god else h_data["color"])),
-        hovertext=hover_label, # Re-applied
-        hoverinfo="text",      # Re-applied
-        customdata=[name], name="node"
+        hovertext=hover_label, hoverinfo="text", customdata=[name], name="node"
     ))
 
 fig.update_layout(
     template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
     xaxis=dict(visible=False), yaxis=dict(visible=False),
     clickmode='event+select', showlegend=False,
-    margin=dict(t=50, b=50, l=50, r=50),
-    hoverlabel=dict(bgcolor="#111", font_size=12, font_family="monospace") # Styled tooltips
+    margin=dict(t=50, b=50, l=50, r=50)
 )
 
 # =====================================================
-# 4. JAVASCRIPT INJECTION
+# 4. JAVASCRIPT INJECTION (REFINED TOGGLE/OUTSIDE CLICK)
 # =====================================================
 anc_json = json.dumps(ancestor_map)
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
@@ -201,7 +191,7 @@ function resetToDefault() {{
     var widths = [];
     for(var i=0; i<graphDiv.data.length; i++){{
         var trace = graphDiv.data[i];
-        if (trace.name === "line_parent") opacities.push(0.20);
+        if (trace.name === "line_parent") opacities.push(0.25);
         else if (trace.name === "line_child") opacities.push(0.45);
         else if (trace.name === "glow") opacities.push(0.2);
         else opacities.push(1.0);
@@ -212,7 +202,15 @@ function resetToDefault() {{
 }}
 
 graphDiv.on('plotly_click', function(data){{
+    // Check if we clicked on an actual node
+    if (!data.points || !data.points[0].customdata) {{
+        resetToDefault();
+        return;
+    }}
+
     var selectedHorse = data.points[0].customdata;
+    
+    // Toggle off if same horse is clicked
     if (currentHighlighted === selectedHorse) {{
         resetToDefault();
         return;
@@ -241,13 +239,19 @@ graphDiv.on('plotly_click', function(data){{
     Plotly.restyle(graphDiv, update);
 }});
 
-graphDiv.on('plotly_doubleclick', function() {{
-    resetToDefault();
-}});
+// Catch-all click for the graph background
+graphDiv.addEventListener('click', function(e) {{
+    // If the click target is the background canvas or the container, reset.
+    if (e.target.classList.contains('nsewdrag') || e.target.classList.contains('plotly-graph-div')) {{
+        resetToDefault();
+    }}
+}}, true);
+
+graphDiv.on('plotly_doubleclick', resetToDefault);
 </script>
 """
 
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
 
-print("Tooltips restored. Everything is back in the hover viewer!")
+print("Ancestor logic reviewed: Parent opacity set to 0.25. Click-to-reset (node or background) is live.")
