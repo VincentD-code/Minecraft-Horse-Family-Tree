@@ -189,6 +189,8 @@ fig.update_layout(
     hoverlabel=dict(bgcolor="#111", font_size=12, font_family="monospace")
 )
 
+js_color_map = json.dumps(origin_colors)
+
 # =====================================================
 # 4. FULLY INTEGRATED BINDER UI & COMPLETE LOGIC ENGINE
 # =====================================================
@@ -211,6 +213,7 @@ blood_alive = df[df['Status'] != 'Dead']['OriginBlood'].value_counts(normalize=T
 stats_json = json.dumps({"top_16": top_16_speed, "avg_speed": avg_speed_gen, "blood_all": blood_all, "blood_alive": blood_alive})
 anc_json = json.dumps(ancestor_map)
 desc_json = json.dumps(final_desc_map)
+js_color_map = json.dumps(origin_colors) # Added color map for the pie charts
 
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
 
@@ -276,6 +279,9 @@ ui_html = f"""
         padding:15px; border:1px solid #444; color:white; font-family:monospace; 
         border-radius:8px; cursor:pointer; user-select:none;
     }}
+
+    /* Pie Chart Specific Height */
+    .pie-container {{ height: 260px; width: 100%; margin-bottom: 20px; }}
 </style>
 
 <div id="binder-container">
@@ -302,9 +308,9 @@ ui_html = f"""
 
     <div id="page-2" class="binder-page">
         <div class="page-header">GENETIC SPLIT (ALIVE)</div>
-        <div id="blood-alive-container"></div>
+        <div id="pie-alive" class="pie-container"></div>
         <div class="page-header" style="margin-top:30px;">GENETIC SPLIT (ALL)</div>
-        <div id="blood-all-container"></div>
+        <div id="pie-all" class="pie-container"></div>
         <div class="minimize-btn" onclick="toggleBinder()">[ MINIMIZE BINDER ]</div>
     </div>
 </div>
@@ -321,27 +327,29 @@ js_script = f"""
 var ancestorMap = {anc_json};
 var descendantMap = {desc_json};
 var stats = {stats_json};
+var bloodColors = {js_color_map};
 var currentMode = 'ancestors'; 
 var currentHighlighted = null;
 
-// Toggles the slide-in/out state
 function toggleBinder() {{
     document.getElementById('binder-container').classList.toggle('active');
 }}
 
-// Switches pages and ensures binder is open
 function openTab(index) {{
     document.getElementById('binder-container').classList.add('active');
     document.querySelectorAll('.binder-page').forEach(p => p.classList.remove('active-page'));
     document.querySelectorAll('.binder-tab').forEach(t => t.classList.remove('active-tab'));
     document.getElementById('page-' + index).classList.add('active-page');
     document.querySelectorAll('.binder-tab')[index].classList.add('active-tab');
+    
+    // Fix for Plotly charts not rendering correctly when hidden
+    window.dispatchEvent(new Event('resize'));
 }}
 
 window.addEventListener('load', function() {{
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 
-    // 1. POPULATE LEADERBOARD + CLICK LOGIC
+    // 1. POPULATE LEADERBOARD
     const t16Body = document.getElementById('top-16-body');
     stats.top_16.forEach((h, i) => {{
         let row = document.createElement('tr');
@@ -364,20 +372,38 @@ window.addEventListener('load', function() {{
         </div>`;
     }});
 
-    // 3. POPULATE GENETICS
-    const drawBlood = (data, id) => {{
-        const el = document.getElementById(id);
-        Object.entries(data).forEach(([name, val]) => {{
-            el.innerHTML += `<div class="stat-section">
-                <div class="stat-label"><span>${{name}}</span><span>${{val}}%</span></div>
-                <div class="bar-bg"><div class="bar-fill gold" style="width:${{val}}%"></div></div>
-            </div>`;
-        }});
-    }};
-    drawBlood(stats.blood_alive, 'blood-alive-container');
-    drawBlood(stats.blood_all, 'blood-all-container');
+    // 3. POPULATE GENETIC PIE CHARTS
+    const renderPie = (targetId, dataDict) => {{
+        const labels = Object.keys(dataDict);
+        const values = Object.values(dataDict);
+        const colors = labels.map(l => bloodColors[l] || "#444444");
 
-    // --- FULL HIGHLIGHTING LOGIC ENGINE ---
+        const data = [{{
+            values: values,
+            labels: labels,
+            type: 'pie',
+            hole: 0.4,
+            marker: {{ colors: colors, line: {{ color: '#121212', width: 2 }} }},
+            textinfo: 'percent',
+            hoverinfo: 'label+percent',
+            textfont: {{ family: 'monospace', color: '#fff' }}
+        }}];
+
+        const layout = {{
+            showlegend: true,
+            legend: {{ orientation: 'h', font: {{ size: 10, color: '#888' }}, y: -0.2 }},
+            margin: {{ t: 0, b: 0, l: 10, r: 10 }},
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)'
+        }};
+
+        Plotly.newPlot(targetId, data, layout, {{displayModeBar: false}});
+    }};
+
+    renderPie('pie-alive', stats.blood_alive);
+    renderPie('pie-all', stats.blood_all);
+
+    // --- HIGHLIGHTING LOGIC ---
     window.highlightLogic = function(selectedHorse) {{
         var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
         var relatedSet = targetMap[selectedHorse] || [selectedHorse];
@@ -416,22 +442,16 @@ window.addEventListener('load', function() {{
         currentHighlighted = null;
     }}
 
-    // KEYBOARD LISTENER
     document.addEventListener('keydown', (e) => {{ if(e.key.toLowerCase() === 'm') toggleMode(); }});
-
-    // PLOTLY CLICK EVENTS
     graphDiv.on('plotly_click', function(data){{
         if (!data || !data.points) return;
         var pt = data.points[0];
         var raw = pt.customdata;
         var name = (raw && typeof raw === 'object') ? (raw.child || raw[0]) : (Array.isArray(raw) ? raw[0] : raw);
         if (!name) return;
-
         if (currentHighlighted === name) resetToDefault();
         else {{ currentHighlighted = name; highlightLogic(name); }}
     }});
-
-    // RESET ON BACKGROUND CLICK
     graphDiv.on('plotly_doubleclick', resetToDefault);
     graphDiv.addEventListener('mousedown', (e) => {{ if(e.target.classList.contains('nsewdrag')) resetToDefault(); }});
 }});
