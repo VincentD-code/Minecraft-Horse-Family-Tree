@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from bigtree import Node
-from datetime import datetime
 import os
 
 # =====================================================
@@ -32,7 +31,6 @@ def build_hierarchy(name):
     node = Node(name)
     node_registry[name] = node
     
-    # Primary lineage path
     p1_name = row.get("Parent1", "")
     if p1_name in horse_db:
         parent_node = build_hierarchy(p1_name)
@@ -100,46 +98,48 @@ for name in horse_db:
     process_horse(name)
 
 # =====================================================
-# 3. POSITIONING & RANKING
+# 3. SYMMETRICAL POSITIONING logic
 # =====================================================
 pos = {}
-gen_counts = {}
+gen_groups = {}
 for name, node in node_registry.items():
-    depth = node.depth
-    gen_counts[depth] = gen_counts.get(depth, 0) + 1
-    # Adjust spacing for better readability
-    pos[name] = (gen_counts[depth] * 22.0 - 100, -depth * 18.0)
+    gen_groups.setdefault(node.depth, []).append(name)
+
+for depth, names in gen_groups.items():
+    total_names = len(names)
+    spacing = 25.0
+    # Centering the row relative to 0
+    start_x = -((total_names - 1) * spacing) / 2
+    for i, name in enumerate(names):
+        pos[name] = (start_x + (i * spacing), -depth * 22.0)
 
 alive_horses = [n for n, d in horse_db.items() if d.get("Status") == "Alive"]
-top_16 = sorted(alive_horses, key=lambda x: float(horse_db[x].get("Speed", 0) or 0), reverse=True)[:16]
-god_horse = top_16[0] if top_16 else None
+god_horse = sorted(alive_horses, key=lambda x: float(horse_db[x].get("Speed", 0) or 0), reverse=True)[0] if alive_horses else None
 
 # =====================================================
-# 4. PLOTLY MULTI-VIEW BUILDER
+# 4. PLOTLY BUILDER (Symmetrical Tree Only)
 # =====================================================
 fig = go.Figure()
-tree_idx, dash_idx, table_idx = [], [], []
 
-# --- VIEW A: THE TREE ---
 for name, row in horse_db.items():
     p1_n, p2_n = row["Parent1"], row["Parent2"]
     if p1_n in pos and p2_n in pos:
         p1, p2, child = pos[p1_n], pos[p2_n], pos[name]
+        h_data = data_registry[name]
         
-        # Connection Line
+        # Symmetrical Bridge line between parents
         fig.add_trace(go.Scatter(x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
                                  line=dict(color="rgba(255,255,255,0.1)", width=1), hoverinfo='skip', showlegend=False))
-        tree_idx.append(len(fig.data)-1)
 
-        # Signature Hybrid Curves
+        # Bezier Hybrid Curves
         mid_x, mid_y = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
-        t = np.linspace(0, 1, 20)
+        t = np.linspace(0, 1, 25)
         curve_x = (1-t)**3 * mid_x + 3*(1-t)**2*t * mid_x + 3*(1-t)*t**2 * child[0] + t**3 * child[0]
-        curve_y = (1-t)**3 * mid_y + 3*(1-t)**2*t * (mid_y - 6) + 3*(1-t)*t**2 * (child[1] + 6) + t**3 * child[1]
+        curve_y = (1-t)**3 * mid_y + 3*(1-t)**2*t * (mid_y - 8) + 3*(1-t)*t**2 * (child[1] + 8) + t**3 * child[1]
         fig.add_trace(go.Scatter(x=curve_x, y=curve_y, mode='lines', 
-                                 line=dict(color=data_registry[name]["color"], width=2.5), opacity=0.5, hoverinfo='skip', showlegend=False))
-        tree_idx.append(len(fig.data)-1)
+                                 line=dict(color=h_data["color"], width=3), opacity=0.6, hoverinfo='skip', showlegend=False))
 
+# Draw Horse Nodes
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
     is_dead = horse_db[name].get("Status") == "Dead"
@@ -148,77 +148,29 @@ for name, (x, y) in pos.items():
     fig.add_trace(go.Scatter(
         x=[x], y=[y], mode='markers+text',
         text=[f"★ {name.upper()}" if name == god_horse else name.upper()],
-        textposition="bottom center", textfont=dict(size=8, color="rgba(255,255,255,0.8)"),
-        marker=dict(size=25 if name == god_horse else 14, color='black' if is_dead else h_data["color"],
+        textposition="bottom center", textfont=dict(size=9, color="white"),
+        marker=dict(size=28 if name == god_horse else 16, color='black' if is_dead else h_data["color"],
                     line=dict(width=2, color=h_data["color"]), symbol="star" if name == god_horse else "circle"),
         hovertext=f"<b>{name.upper()}</b><br>Speed: {horse_db[name]['Speed']}<br>DNA: {int(sorted_dna[0][1]*100)}% {sorted_dna[0][0]}<br>F: {h_data['f']*100:.1f}%",
         showlegend=False
     ))
-    tree_idx.append(len(fig.data)-1)
 
+# Build Legend
 for blood, color in origin_colors.items():
-    fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color, size=10), name=blood, visible=True))
-    tree_idx.append(len(fig.data)-1)
-
-# --- VIEW B: DASHBOARD ---
-avg_f = np.mean([d['f'] for d in data_registry.values()])
-god_f = data_registry[god_horse]['f'] if god_horse else 0
-fig.add_trace(go.Bar(y=["Avg", f"Fastest"], x=[avg_f, god_f], orientation='h',
-                     marker=dict(color=['#888', '#FFD700']), visible=False, xaxis='x2', yaxis='y2', name="F-Score"))
-dash_idx.append(len(fig.data)-1)
-
-gens = sorted(gen_counts.keys())
-gen_avgs = [np.mean([float(horse_db[n]['Speed']) for n in node_registry if node_registry[n].depth == g]) for g in gens]
-fig.add_trace(go.Scatter(x=gens, y=gen_avgs, mode='lines+markers', line=dict(color='cyan', width=3), 
-                         visible=False, xaxis='x3', yaxis='y3', name="Trend"))
-dash_idx.append(len(fig.data)-1)
-
-# --- VIEW C: LEADERBOARD ---
-table_rows = []
-for i, name in enumerate(top_16, 1):
-    dna_list = sorted(data_registry[name]["dna"].items(), key=lambda x: x[1], reverse=True)
-    comp = " | ".join([f"{int(v*100)}% {k}" for k, v in dna_list[:3]])
-    table_rows.append([i, name, horse_db[name]['Speed'], f"{data_registry[name]['f']*100:.2f}%", comp])
-
-fig.add_trace(go.Table(
-    header=dict(values=['RANK', 'NAME', 'SPD', 'F-SCORE', 'TOP DNA'], fill_color='#222', font=dict(color='white', size=12)),
-    cells=dict(values=list(zip(*table_rows)), fill_color='#050505', font=dict(color='white', size=11), height=30),
-    visible=False
-))
-table_idx.append(len(fig.data)-1)
+    fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color, size=10), name=blood))
 
 # =====================================================
-# 6. FINAL LAYOUT & LOGIC ISOLATION
+# 5. FINAL LAYOUT (Axes Removed, Dark Mode)
 # =====================================================
-total = len(fig.data)
-def get_vis(indices): return [True if i in indices else False for i in range(total)]
-
 fig.update_layout(
-    updatemenus=[dict(
-        type="dropdown", direction="down", x=0.01, y=0.99, showactive=True,
-        buttons=[
-            dict(label=" Dynasty Tree View ", method="update", 
-                 args=[{"visible": get_vis(tree_idx)}, 
-                       {"xaxis.visible": False, "yaxis.visible": False, "xaxis2.visible": False, "yaxis2.visible": False, 
-                        "xaxis3.visible": False, "yaxis3.visible": False, "showlegend": True}]),
-            dict(label=" Stats Dashboard ", method="update", 
-                 args=[{"visible": get_vis(dash_idx)}, 
-                       {"xaxis2.visible": True, "yaxis2.visible": True, "xaxis3.visible": True, "yaxis3.visible": True, 
-                        "xaxis.visible": False, "yaxis.visible": False, "showlegend": False}]),
-            dict(label=" Top 16 Leaderboard ", method="update", 
-                 args=[{"visible": get_vis(table_idx)}, 
-                       {"xaxis.visible": False, "yaxis.visible": False, "xaxis2.visible": False, "yaxis2.visible": False, 
-                        "xaxis3.visible": False, "yaxis3.visible": False, "showlegend": False}])
-        ],
-        bgcolor="#111", font=dict(color="white")
-    )],
-    template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
-    xaxis2=dict(domain=[0.05, 0.45], anchor='y2', visible=False, title="Inbreeding (F)"),
-    yaxis2=dict(domain=[0.6, 0.9], anchor='x2', visible=False),
-    xaxis3=dict(domain=[0.55, 0.95], anchor='y3', visible=False, title="Generation Depth"),
-    yaxis3=dict(domain=[0.6, 0.9], anchor='x3', visible=False, title="Avg Speed"),
-    margin=dict(t=80, b=50, l=50, r=50)
+    template="plotly_dark", 
+    paper_bgcolor='#050505', 
+    plot_bgcolor='#050505',
+    xaxis=dict(visible=False, showgrid=False, zeroline=False),
+    yaxis=dict(visible=False, showgrid=False, zeroline=False),
+    margin=dict(t=40, b=20, l=20, r=20),
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
 )
 
 fig.write_html("index.html", config={'scrollZoom': True})
-print("Build Successful: Open 'index.html' to interact with your data.")
+print("Build Successful: Symmetrical Dynasty Tree created. All extra views removed.")
