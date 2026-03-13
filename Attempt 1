@@ -139,6 +139,24 @@ for name, (x, y) in pos.items():
     line_width = 3 if (is_god or is_dead) else 1.5
     display_name = f"★ GOD HORSE: {name.upper()} ★" if is_god else name.upper()
     
+    # Tooltip Setup - RESTORED
+    dna_sorted = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
+    dna_str = "<br>".join([f"  • {k}: {v*100:.1f}%" for k, v in dna_sorted if v > 0])
+    p1, p2 = row.get("Parent1"), row.get("Parent2")
+    
+    if p1 and p2:
+        s1, s2 = horse_db[p1].get("Speed", "??"), horse_db[p2].get("Speed", "??")
+        parent_info = f"Parents: {p1} ({s1}) & {p2} ({s2})<br>Breeding Roll: {h_data['mutation']:.2f}"
+    else:
+        parent_info = "Foundation Horse"
+
+    hover_label = (
+        f"<b>{display_name}</b> ({'DEAD' if is_dead else 'ALIVE'})<br>"
+        f"Speed: {row['Speed']}<br>"
+        f"{parent_info}<br>"
+        f"<b>Bloodline Density:</b><br>{dna_str}"
+    )
+
     if is_god:
         fig.add_trace(go.Scatter(
             x=[x], y=[y], mode='markers',
@@ -153,18 +171,21 @@ for name, (x, y) in pos.items():
                     color=node_fill, 
                     symbol="star" if is_god else "circle",
                     line=dict(width=line_width, color="#FFD700" if is_god else h_data["color"])),
-        hoverinfo="text", customdata=[name], name="node"
+        hovertext=hover_label, # Re-applied
+        hoverinfo="text",      # Re-applied
+        customdata=[name], name="node"
     ))
 
 fig.update_layout(
     template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
     xaxis=dict(visible=False), yaxis=dict(visible=False),
     clickmode='event+select', showlegend=False,
-    margin=dict(t=50, b=50, l=50, r=50)
+    margin=dict(t=50, b=50, l=50, r=50),
+    hoverlabel=dict(bgcolor="#111", font_size=12, font_family="monospace") # Styled tooltips
 )
 
 # =====================================================
-# 4. JAVASCRIPT INJECTION (FIXED SYNTAX)
+# 4. JAVASCRIPT INJECTION
 # =====================================================
 anc_json = json.dumps(ancestor_map)
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
@@ -177,27 +198,21 @@ var currentHighlighted = null;
 
 function resetToDefault() {{
     var opacities = [];
-    var lineWidths = [];
-    
+    var widths = [];
     for(var i=0; i<graphDiv.data.length; i++){{
         var trace = graphDiv.data[i];
         if (trace.name === "line_parent") opacities.push(0.20);
         else if (trace.name === "line_child") opacities.push(0.45);
         else if (trace.name === "glow") opacities.push(0.2);
-        else opacities.push(1.0); 
-        
-        if (trace.name === "line_child") lineWidths.push(2.5);
-        else if (trace.name === "line_parent") lineWidths.push(1.5);
-        else lineWidths.push(null); 
+        else opacities.push(1.0);
+        widths.push(trace.name === "line_child" ? 2.5 : (trace.name === "line_parent" ? 1.5 : null));
     }}
-    Plotly.restyle(graphDiv, {{ 'opacity': opacities, 'line.width': lineWidths }});
+    Plotly.restyle(graphDiv, {{ 'opacity': opacities, 'line.width': widths }});
     currentHighlighted = null;
 }}
 
 graphDiv.on('plotly_click', function(data){{
-    if(!data.points || !data.points[0].customdata) return;
-    var selectedHorse = data.points[0].customdata[0];
-    
+    var selectedHorse = data.points[0].customdata;
     if (currentHighlighted === selectedHorse) {{
         resetToDefault();
         return;
@@ -206,34 +221,24 @@ graphDiv.on('plotly_click', function(data){{
     var ancestors = ancestorMap[selectedHorse] || [];
     currentHighlighted = selectedHorse;
     
-    var opacities = [];
-    var lineWidths = [];
+    var update = {{ 'opacity': [], 'line.width': [] }};
 
     for(var i=0; i<graphDiv.data.length; i++){{
         var trace = graphDiv.data[i];
-        var traceHorse = (trace.customdata && trace.customdata.length > 0) ? trace.customdata[0] : null;
+        var traceHorse = trace.customdata ? trace.customdata[0] : null;
         
         if (traceHorse && ancestors.includes(traceHorse)) {{
-            opacities.push(1.0); 
-            if(trace.name && trace.name.includes("line")) {{
-                lineWidths.push(5.0);
-            }} else {{
-                lineWidths.push(null);
-            }}
+            update.opacity.push(1.0);
+            update['line.width'].push(trace.name.includes("line") ? 5 : null);
+        }} else if (trace.name === "glow") {{
+             update.opacity.push(0.02);
+             update['line.width'].push(null);
         }} else {{
-            opacities.push(0.04);
-            if(trace.name && trace.name.includes("line")) {{
-                lineWidths.push(0.5);
-            }} else {{
-                lineWidths.push(null);
-            }}
+            update.opacity.push(0.04);
+            update['line.width'].push(trace.name.includes("line") ? 0.5 : null);
         }}
     }}
-    
-    Plotly.restyle(graphDiv, {{ 
-        'opacity': opacities, 
-        'line.width': lineWidths 
-    }});
+    Plotly.restyle(graphDiv, update);
 }});
 
 graphDiv.on('plotly_doubleclick', function() {{
@@ -245,4 +250,4 @@ graphDiv.on('plotly_doubleclick', function() {{
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
 
-print("Syntax fixed. JavaScript curly braces have been escaped for Python f-string compatibility.")
+print("Tooltips restored. Everything is back in the hover viewer!")
