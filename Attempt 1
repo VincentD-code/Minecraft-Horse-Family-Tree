@@ -560,6 +560,9 @@ function openTab(index) {{
 window.addEventListener('load', function() {{
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 
+    // Store original opacity for all traces to prevent cumulative fading
+    window.originalTraceOpacity = graphDiv.data.map(t => t.opacity || 1.0);
+
     // 1. POPULATE LEADERBOARD
     const t16Body = document.getElementById('top-16-body');
     stats.top_16.forEach((h, i) => {{
@@ -618,9 +621,10 @@ window.addEventListener('load', function() {{
     window.highlightLogic = function(selectedHorse) {{
         var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
         var relatedSet = targetMap[selectedHorse] || [selectedHorse];
-        var newOpacities = []; var newWidths = [];
+        var newOpacities = [];
+        var newWidths = [];
 
-        for(var i=0; i < graphDiv.data.length; i++){{
+        for(var i = 0; i < graphDiv.data.length; i++) {{
             var trace = graphDiv.data[i];
             var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
             var traceHorseName = (rawData && typeof rawData === 'object') ? rawData.child : rawData;
@@ -629,11 +633,18 @@ window.addEventListener('load', function() {{
             if (trace.name === "node" || trace.name === "glow") {{
                 isRelated = relatedSet.includes(traceHorseName);
             }} else if (trace.name.includes("line")) {{
-                isRelated = relatedSet.includes(traceHorseName) && (traceHorseName !== selectedHorse || currentMode === 'ancestors');
+                isRelated = relatedSet.includes(traceHorseName) &&
+                            (traceHorseName !== selectedHorse || currentMode === 'ancestors');
             }}
-            
-            newOpacities.push(isRelated ? 1.0 : 0.05);
-            newWidths.push(isRelated && trace.name.includes("line") ? 5.0 : (trace.name.includes("line") ? 0.1 : null));
+
+            // Use original opacity for unrelated traces to prevent cumulative dimming
+            newOpacities.push(isRelated ? 1.0 : window.originalTraceOpacity[i]);
+
+            // Line width adjustment for highlight
+            newWidths.push(
+                isRelated && trace.name.includes("line") ? 5.0 :
+                (trace.name.includes("line") ? (trace.name === "line_parent" ? 1.5 : 2.5) : null)
+            );
         }}
         Plotly.restyle(graphDiv, {{ 'opacity': newOpacities, 'line.width': newWidths }});
     }};
@@ -647,8 +658,15 @@ window.addEventListener('load', function() {{
     }};
 
     function resetToDefault() {{
-        var ops = graphDiv.data.map(t => t.name === "line_parent" ? 0.3 : (t.name === "line_child" ? 0.45 : (t.name === "glow" ? 0.2 : 1.0)));
-        var wds = graphDiv.data.map(t => t.name === "line_child" ? 2.5 : (t.name === "line_parent" ? 1.5 : null));
+        var ops = graphDiv.data.map(t => 
+            t.name === "line_parent" ? 0.3 :
+            (t.name === "line_child" ? 0.45 :
+            (t.name === "glow" ? 0.2 : 1.0))
+        );
+        var wds = graphDiv.data.map(t =>
+            t.name === "line_child" ? 2.5 :
+            (t.name === "line_parent" ? 1.5 : null)
+        );
         Plotly.restyle(graphDiv, {{ 'opacity': ops, 'line.width': wds }});
         currentHighlighted = null;
     }}
