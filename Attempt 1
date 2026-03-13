@@ -535,13 +535,11 @@ ui_html = f"""
 js_script = f"""
 {ui_html}
 <script>
-
 var ancestorMap = {anc_json};
 var descendantMap = {desc_json};
 var stats = {stats_json};
 var bloodColors = {js_color_map};
-
-var currentMode = 'ancestors';
+var currentMode = 'ancestors'; 
 var currentHighlighted = null;
 
 function toggleBinder() {{
@@ -549,295 +547,124 @@ function toggleBinder() {{
 }}
 
 function openTab(index) {{
-
     document.getElementById('binder-container').classList.add('active');
-
-    document.querySelectorAll('.binder-page').forEach(p => 
-        p.classList.remove('active-page')
-    );
-
-    document.querySelectorAll('.binder-tab').forEach(t => 
-        t.classList.remove('active-tab')
-    );
-
+    document.querySelectorAll('.binder-page').forEach(p => p.classList.remove('active-page'));
+    document.querySelectorAll('.binder-tab').forEach(t => t.classList.remove('active-tab'));
     document.getElementById('page-' + index).classList.add('active-page');
     document.querySelectorAll('.binder-tab')[index].classList.add('active-tab');
-
+    
+    // Fix for Plotly charts not rendering correctly when hidden
     window.dispatchEvent(new Event('resize'));
 }}
 
 window.addEventListener('load', function() {{
-
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 
-    // Store original opacity to prevent cumulative dimming bug
-    window.originalTraceOpacity = graphDiv.data.map(t => t.opacity || 1.0);
-
-
-    /* =============================
-       POPULATE TOP 16 LEADERBOARD
-       ============================= */
-
+    // 1. POPULATE LEADERBOARD
     const t16Body = document.getElementById('top-16-body');
-
     stats.top_16.forEach((h, i) => {{
-
         let row = document.createElement('tr');
-
-        row.innerHTML =
-            `<td>${{i+1}}</td>
-             <td>${{h.Name}}</td>
-             <td style="color:#FFD700;font-weight:bold;">${{h.Speed}}</td>`;
-
+        row.innerHTML = `<td>${{i+1}}</td><td>${{h.Name}}</td><td style="color:#FFD700; font-weight:bold;">${{h.Speed}}</td>`;
         row.onclick = () => {{
             currentHighlighted = h.Name;
             highlightLogic(h.Name);
         }};
-
         t16Body.appendChild(row);
     }});
 
-
-    /* =============================
-       GENERATION SPEED ANALYTICS
-       ============================= */
-
+    // 2. POPULATE GENERATION ANALYTICS
     const genCont = document.getElementById('gen-stats-container');
-
     const maxSpd = Math.max(...Object.values(stats.avg_speed));
-
     Object.entries(stats.avg_speed).forEach(([gen, spd]) => {{
-
         let barWidth = (spd / maxSpd) * 100;
-
-        genCont.innerHTML +=
-        `<div class="stat-section">
-            <div class="stat-label">
-                <span>GEN ${{gen}}</span>
-                <span>${{spd}}</span>
-            </div>
-            <div class="bar-bg">
-                <div class="bar-fill" style="width:${{barWidth}}%"></div>
-            </div>
+        genCont.innerHTML += `<div class="stat-section">
+            <div class="stat-label"><span>GEN ${{gen}}</span><span>${{spd}}</span></div>
+            <div class="bar-bg"><div class="bar-fill" style="width:${{barWidth}}%"></div></div>
         </div>`;
     }});
 
-
-    /* =============================
-       PIE CHART RENDER FUNCTION
-       ============================= */
-
+    // 3. POPULATE GENETIC PIE CHARTS
     const renderPie = (targetId, dataDict) => {{
-
         const labels = Object.keys(dataDict);
         const values = Object.values(dataDict);
-        const colors = labels.map(l => bloodColors[l] || "#444");
+        const colors = labels.map(l => bloodColors[l] || "#444444");
 
         const data = [{{
             values: values,
             labels: labels,
             type: 'pie',
             hole: 0.4,
-            marker: {{
-                colors: colors,
-                line: {{color:'#121212', width:2}}
-            }},
+            marker: {{ colors: colors, line: {{ color: '#121212', width: 2 }} }},
             textinfo: 'percent',
             hoverinfo: 'label+percent',
-            textfont: {{
-                family:'monospace',
-                color:'#fff'
-            }}
+            textfont: {{ family: 'monospace', color: '#fff' }}
         }}];
 
         const layout = {{
-            showlegend:true,
-            legend:{{
-                orientation:'h',
-                font:{{size:10,color:'#888'}},
-                y:-0.2
-            }},
-            margin:{{t:0,b:0,l:10,r:10}},
-            paper_bgcolor:'rgba(0,0,0,0)',
-            plot_bgcolor:'rgba(0,0,0,0)'
+            showlegend: true,
+            legend: {{ orientation: 'h', font: {{ size: 10, color: '#888' }}, y: -0.2 }},
+            margin: {{ t: 0, b: 0, l: 10, r: 10 }},
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0)'
         }};
 
-        Plotly.newPlot(targetId, data, layout, {{displayModeBar:false}});
+        Plotly.newPlot(targetId, data, layout, {{displayModeBar: false}});
     }};
 
     renderPie('pie-alive', stats.blood_alive);
     renderPie('pie-all', stats.blood_all);
 
-
-    /* =============================
-       HIGHLIGHT LOGIC
-       ============================= */
-
+    // --- HIGHLIGHTING LOGIC ---
     window.highlightLogic = function(selectedHorse) {{
+        var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
+        var relatedSet = targetMap[selectedHorse] || [selectedHorse];
+        var newOpacities = []; var newWidths = [];
 
-        var targetMap =
-            (currentMode === 'ancestors')
-            ? ancestorMap
-            : descendantMap;
-
-        var relatedSet =
-            targetMap[selectedHorse] || [selectedHorse];
-
-        var newOpacities = [];
-        var newWidths = [];
-
-        for(var i=0;i<graphDiv.data.length;i++){{
-
+        for(var i=0; i < graphDiv.data.length; i++){{
             var trace = graphDiv.data[i];
-
-            var rawData =
-                Array.isArray(trace.customdata)
-                ? trace.customdata[0]
-                : trace.customdata;
-
-            var traceHorseName =
-                (rawData && typeof rawData === 'object')
-                ? rawData.child
-                : rawData;
+            var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
+            var traceHorseName = (rawData && typeof rawData === 'object') ? rawData.child : rawData;
 
             var isRelated = false;
-
-            if(trace.name === "node" || trace.name === "glow"){{
+            if (trace.name === "node" || trace.name === "glow") {{
                 isRelated = relatedSet.includes(traceHorseName);
+            }} else if (trace.name.includes("line")) {{
+                isRelated = relatedSet.includes(traceHorseName) && (traceHorseName !== selectedHorse || currentMode === 'ancestors');
             }}
-
-            else if(trace.name.includes("line")){{
-                isRelated =
-                    relatedSet.includes(traceHorseName) &&
-                    (traceHorseName !== selectedHorse ||
-                     currentMode === 'ancestors');
-            }}
-
-            newOpacities.push(
-                isRelated
-                ? 1.0
-                : window.originalTraceOpacity[i]
-            );
-
-            newWidths.push(
-
-                isRelated && trace.name.includes("line")
-                ? 5.0
-                : (trace.name.includes("line")
-                    ? (trace.name === "line_parent"
-                        ? 1.5
-                        : 2.5)
-                    : null)
-            );
+            
+            newOpacities.push(isRelated ? 1.0 : 0.05);
+            newWidths.push(isRelated && trace.name.includes("line") ? 5.0 : (trace.name.includes("line") ? 0.1 : null));
         }}
-
-        Plotly.restyle(
-            graphDiv,
-            {{'opacity':newOpacities,'line.width':newWidths}}
-        );
+        Plotly.restyle(graphDiv, {{ 'opacity': newOpacities, 'line.width': newWidths }});
     }};
-
-
-    /* =============================
-       MODE TOGGLE
-       ============================= */
 
     window.toggleMode = function() {{
-
-        currentMode =
-            (currentMode === 'ancestors')
-            ? 'descendants'
-            : 'ancestors';
-
+        currentMode = (currentMode === 'ancestors') ? 'descendants' : 'ancestors';
         var txt = document.getElementById('mode-text');
-
         txt.innerText = currentMode.toUpperCase();
-
-        txt.style.color =
-            (currentMode === 'ancestors')
-            ? '#00F5FF'
-            : '#FF4500';
-
-        if(currentHighlighted)
-            highlightLogic(currentHighlighted);
+        txt.style.color = (currentMode === 'ancestors') ? '#00F5FF' : '#FF4500';
+        if (currentHighlighted) highlightLogic(currentHighlighted);
     }};
-
-
-    /* =============================
-       RESET TREE
-       ============================= */
 
     function resetToDefault() {{
-
-        var ops = graphDiv.data.map(t =>
-            t.name === "line_parent" ? 0.3 :
-            (t.name === "line_child" ? 0.45 :
-            (t.name === "glow" ? 0.2 : 1.0))
-        );
-
-        var wds = graphDiv.data.map(t =>
-            t.name === "line_child" ? 2.5 :
-            (t.name === "line_parent" ? 1.5 : null)
-        );
-
-        Plotly.restyle(
-            graphDiv,
-            {{'opacity':ops,'line.width':wds}}
-        );
-
+        var ops = graphDiv.data.map(t => t.name === "line_parent" ? 0.3 : (t.name === "line_child" ? 0.45 : (t.name === "glow" ? 0.2 : 1.0)));
+        var wds = graphDiv.data.map(t => t.name === "line_child" ? 2.5 : (t.name === "line_parent" ? 1.5 : null));
+        Plotly.restyle(graphDiv, {{ 'opacity': ops, 'line.width': wds }});
         currentHighlighted = null;
-    }};
+    }}
 
-
-    /* =============================
-       KEYBOARD MODE SWITCH
-       ============================= */
-
-    document.addEventListener('keydown',(e)=>{{
-        if(e.key.toLowerCase()==='m')
-            toggleMode();
-    }});
-
-
-    /* =============================
-       NODE CLICK HANDLER
-       ============================= */
-
+    document.addEventListener('keydown', (e) => {{ if(e.key.toLowerCase() === 'm') toggleMode(); }});
     graphDiv.on('plotly_click', function(data){{
-
-        if(!data || !data.points){{
-            resetToDefault();
-            return;
-        }}
-
+        if (!data || !data.points) return;
         var pt = data.points[0];
-        var trace = graphDiv.data[pt.curveNumber];
-
-        if(trace.name !== "node"){{
-            resetToDefault();
-            return;
-        }}
-
-        var name = pt.customdata[0];
-
-        if(currentHighlighted === name){{
-            resetToDefault();
-            return;
-        }}
-
-        currentHighlighted = name;
-        highlightLogic(name);
+        var raw = pt.customdata;
+        var name = (raw && typeof raw === 'object') ? (raw.child || raw[0]) : (Array.isArray(raw) ? raw[0] : raw);
+        if (!name) return;
+        if (currentHighlighted === name) resetToDefault();
+        else {{ currentHighlighted = name; highlightLogic(name); }}
     }});
-
-
     graphDiv.on('plotly_doubleclick', resetToDefault);
-
-
-    graphDiv.addEventListener('mousedown',(e)=>{{
-        if(e.target.classList.contains('nsewdrag'))
-            resetToDefault();
-    }});
-
+    graphDiv.addEventListener('mousedown', (e) => {{ if(e.target.classList.contains('nsewdrag')) resetToDefault(); }});
 }});
 </script>
 """
