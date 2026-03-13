@@ -185,7 +185,7 @@ fig.update_layout(
 )
 
 # =====================================================
-# 4. JAVASCRIPT INJECTION (FIXED)
+# 4. JAVASCRIPT INJECTION (WORKING VERSION)
 # =====================================================
 anc_json = json.dumps(ancestor_map)
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
@@ -195,49 +195,49 @@ js_script = f"""
 
 var ancestorMap = {anc_json};
 var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
+
 var highlightedHorse = null;
 
-function buildDefaultState(){{
-    var op = [];
-    var widths = [];
+/* store default values */
+var defaultOpacity = [];
+var defaultWidth = [];
 
-    for(let i=0;i<graphDiv.data.length;i++){{
+for(let i=0;i<graphDiv.data.length;i++){{
+    let trace = graphDiv.data[i];
 
-        let trace = graphDiv.data[i];
-
-        if(trace.name === "line_parent"){{
-            op.push(0.20);
-            widths.push(1.5);
-        }}
-        else if(trace.name === "line_child"){{
-            op.push(0.45);
-            widths.push(2.5);
-        }}
-        else if(trace.name === "glow"){{
-            op.push(0.2);
-            widths.push(null);
-        }}
-        else{{
-            op.push(1.0);
-            widths.push(null);
-        }}
+    if(trace.name === "line_parent"){{
+        defaultOpacity.push(0.20);
+        defaultWidth.push(1.5);
     }}
+    else if(trace.name === "line_child"){{
+        defaultOpacity.push(0.45);
+        defaultWidth.push(2.5);
+    }}
+    else if(trace.name === "glow"){{
+        defaultOpacity.push(0.2);
+        defaultWidth.push(null);
+    }}
+    else{{
+        defaultOpacity.push(1.0);
+        defaultWidth.push(null);
+    }}
+}}
 
+function resetView(){{
     Plotly.restyle(graphDiv, {{
-        opacity: op,
-        "line.width": widths
+        opacity: defaultOpacity,
+        "line.width": defaultWidth
     }});
-
     highlightedHorse = null;
 }}
 
 function highlightHorse(name){{
-
-    var ancestors = ancestorMap[name] || [];
+    
+    let ancestors = ancestorMap[name] || [];
     ancestors.push(name);
 
-    var op = [];
-    var widths = [];
+    let newOpacity = [];
+    let newWidth = [];
 
     for(let i=0;i<graphDiv.data.length;i++){{
 
@@ -245,30 +245,33 @@ function highlightHorse(name){{
         let traceHorse = trace.customdata ? trace.customdata[0] : null;
 
         if(traceHorse && ancestors.includes(traceHorse)){{
-            op.push(1.0);
+            
+            newOpacity.push(1.0);
 
-            if(trace.name === "line_parent") widths.push(4);
-            else if(trace.name === "line_child") widths.push(5);
-            else widths.push(null);
+            if(trace.name === "line_parent") newWidth.push(4);
+            else if(trace.name === "line_child") newWidth.push(5);
+            else newWidth.push(null);
+
         }}
         else{{
+
             if(trace.name === "glow"){{
-                op.push(0.02);
-                widths.push(null);
+                newOpacity.push(0.05);
+                newWidth.push(null);
             }}
             else{{
-                op.push(0.05);
+                newOpacity.push(0.05);
 
-                if(trace.name === "line_parent") widths.push(1);
-                else if(trace.name === "line_child") widths.push(1);
-                else widths.push(null);
+                if(trace.name === "line_parent") newWidth.push(1);
+                else if(trace.name === "line_child") newWidth.push(1);
+                else newWidth.push(null);
             }}
         }}
     }}
 
     Plotly.restyle(graphDiv, {{
-        opacity: op,
-        "line.width": widths
+        opacity: newOpacity,
+        "line.width": newWidth
     }});
 
     highlightedHorse = name;
@@ -276,28 +279,27 @@ function highlightHorse(name){{
 
 graphDiv.on("plotly_click", function(data){{
 
-    if(!data || !data.points || !data.points.length) return;
+    if(!data.points.length) return;
 
-    var clickedHorse = data.points[0].customdata;
+    let horse = data.points[0].customdata;
 
-    if(!clickedHorse) return;
+    if(!horse) return;
 
-    if(highlightedHorse === clickedHorse){{
-        buildDefaultState();
-        return;
+    if(highlightedHorse === horse){{
+        resetView();
     }}
-
-    highlightHorse(clickedHorse);
+    else{{
+        highlightHorse(horse);
+    }}
 
 }});
 
-
-/* background click reset */
+/* click outside nodes resets */
 graphDiv.addEventListener("click", function(e){{
 
-    if(e.target.classList.contains("point")) return;
+    if(e.target.closest(".point")) return;
 
-    buildDefaultState();
+    resetView();
 
 }});
 
@@ -307,4 +309,4 @@ graphDiv.addEventListener("click", function(e){{
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
 
-print("Ancestor highlighting system fixed.")
+print("Ancestor highlighting fixed and stable.")
