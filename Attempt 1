@@ -27,10 +27,10 @@ horse_db = df.set_index("Name").to_dict('index')
 
 origin_colors = {
     "Star Strider": "#FFD700", 
-    "Celestial Grass": "#39FF14", 
-    "Thunder Blood": "#FF3333",
-    "Frostmane": "#00F5FF", 
-    "Emberhoof": "#FF4500", 
+    "Celestial Grass": "#00FF7F", 
+    "Thunder Blood": "#FF004F",
+    "Frostmane": "#00D4FF", 
+    "Emberhoof": "#FF8C00", 
     "Slothsoul": "#708090",      
     "Unknown": "#444444"
 }
