@@ -263,10 +263,10 @@ for name, row in horse_db.items():
         ))
 
 # --- PRE-LOOP RANKING LOGIC ---
-# Get the names of the top 4 horses by speed to assign podium honors
-top_four = df.nlargest(4, 'Speed')['Name'].tolist()
+# Get the names of the top 3 horses by speed to assign podium honors
+top_three = df.nlargest(3, 'Speed')['Name'].tolist()
 rank_colors = {0: "#FFD700", 1: "#C0C0C0", 2: "#CD7F32"} # Gold, Silver, Bronze
-rank_shapes = {0: "star", 1: "diamond", 2: "triangle-up", 3: "square"}
+rank_shapes = {0: "star", 1: "diamond", 2: "triangle-up"}
 
 # --- NODES & GLOW ---
 for name, (x, y) in pos.items():
@@ -275,7 +275,7 @@ for name, (x, y) in pos.items():
     row = horse_db[name]
 
     # New Ranking Variables
-    rank = top_four.index(name) if name in top_four else None
+    rank = top_three.index(name) if name in top_three else None
     is_god = (rank == 0) # Fastest horse is Rank 0
     is_dead = row.get("Status") == "Dead"
 
@@ -288,10 +288,6 @@ for name, (x, y) in pos.items():
     # Dynamic Display Name
     if is_god:
         display_name = f"★ GOD HORSE: {name.upper()} ★"
-    elif rank == 1:
-        display_name = f"🥈 {name.upper()}"
-    elif rank == 2:
-        display_name = f"🥉 {name.upper()}"
     else:
         display_name = name.upper()
 
@@ -347,9 +343,9 @@ for name, (x, y) in pos.items():
         text=[display_name],
         textposition="bottom center",
         marker=dict(
-            size=26 if rank is not None else 14, # Larger for top 4
+            size=26 if rank is not None else 14, # Larger for top 3
             color=node_fill,
-            symbol=rank_shapes.get(rank, "circle"), # Star, Diamond, Triangle, Square, or Circle
+            symbol=rank_shapes.get(rank, "circle"), # Star, Diamond, Triangle, or Circle
             line=dict(
                 width=line_width,
                 color=rank_colors.get(rank, h_data["color"]) # Metallic or DNA color
