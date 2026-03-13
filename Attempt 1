@@ -190,58 +190,121 @@ fig.update_layout(
 )
 
 # =====================================================
-# 4. FULLY INTEGRATED UI, STATS (TOP 16) & INTERACTION
+# 4. FULLY INTEGRATED BINDER UI & ANALYTICS
 # =====================================================
-# Calculate data for the Stats Panel - now grabbing Top 16
-bloodline_counts = df['OriginBlood'].value_counts().to_dict()
+# 1. Top 16 Speed (Leaderboard)
 top_16_speed = df.nlargest(16, 'Speed')[['Name', 'Speed']].to_dict('records')
+
+# 2. Average Speed per Generation (Analytics)
+gen_speeds = {}
+for name, data in data_registry.items():
+    lvl = data['level']
+    spd = float(horse_db[name].get('Speed', 0))
+    gen_speeds.setdefault(lvl, []).append(spd)
+avg_speed_gen = {lvl: round(sum(spds)/len(spds), 2) for lvl, spds in sorted(gen_speeds.items())}
+
+# 3. Bloodline % (Current vs History)
+blood_all = df['OriginBlood'].value_counts(normalize=True).mul(100).round(1).to_dict()
+blood_alive = df[df['Status'] != 'Dead']['OriginBlood'].value_counts(normalize=True).mul(100).round(1).to_dict()
+
+stats_json = json.dumps({
+    "top_16": top_16_speed,
+    "avg_speed": avg_speed_gen,
+    "blood_all": blood_all,
+    "blood_alive": blood_alive
+})
 
 anc_json = json.dumps(ancestor_map)
 desc_json = json.dumps(final_desc_map)
-stats_json = json.dumps({"counts": bloodline_counts, "top_16": top_16_speed})
-
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
 
 ui_html = f"""
 <style>
-    /* Stats Panel Styling */
-    #stats-panel {{
-        position: fixed; top: 20px; right: -320px; width: 300px; 
-        background: rgba(15, 15, 15, 0.98); border: 1px solid #444; color: white;
-        padding: 20px; border-radius: 8px 0 0 8px; transition: 0.3s; z-index: 10000;
-        font-family: monospace; box-shadow: -5px 0 15px rgba(0,0,0,0.8);
-        max-height: 90vh; overflow-y: auto;
+    #binder-container {{
+        position: fixed; top: 5%; right: -380px; width: 380px; height: 85vh;
+        transition: 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 10000;
+        font-family: 'Courier New', Courier, monospace;
     }}
-    #stats-panel.active {{ right: 0; }}
-    .toggle-stats-btn {{
-        position: absolute; left: -45px; top: 0; width: 45px; height: 45px;
-        background: #1a1a1a; border: 1px solid #444; color: #00F5FF;
-        display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 8px 0 0 8px;
-        font-size: 20px;
+    #binder-container.active {{ right: 0; }}
+
+    /* Tab Stack - Ring Binder Style */
+    .tab-stack {{
+        position: absolute; left: -65px; top: 40px;
+        display: flex; flex-direction: column; gap: 8px;
     }}
-    .panel-header {{ border-bottom: 1px solid #444; padding-bottom: 8px; margin-bottom: 10px; color: #FFD700; font-size: 14px; font-weight: bold; }}
-    .stats-row {{ display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }}
+    .binder-tab {{
+        width: 65px; height: 75px; background: #222; border: 1px solid #444;
+        border-right: none; color: #00F5FF; display: flex; align-items: center;
+        justify-content: center; cursor: pointer; border-radius: 12px 0 0 12px;
+        font-size: 24px; transition: 0.3s; box-shadow: -5px 5px 10px rgba(0,0,0,0.3);
+    }}
+    .binder-tab:hover {{ background: #333; color: #FFD700; width: 70px; left: -5px; }}
+    .binder-tab.active-tab {{ 
+        background: #1a1a1a; color: #FFD700; width: 75px; left: -10px; 
+        border-left: 4px solid #FFD700; z-index: 10001; 
+    }}
+
+    /* Main Page Area */
+    .binder-page {{
+        width: 100%; height: 100%; background: #1a1a1a; border: 1px solid #444;
+        border-radius: 0 0 0 20px; box-shadow: -15px 15px 30px rgba(0,0,0,0.7);
+        padding: 25px; display: none; overflow-y: auto; color: #eee;
+        scrollbar-width: thin; scrollbar-color: #444 #1a1a1a;
+    }}
+    .binder-page.active-page {{ display: block; }}
     
-    /* Scrollable Table for Top 16 */
-    .table-container {{ max-height: 400px; overflow-y: auto; margin-top: 10px; border: 1px solid #333; }}
-    table {{ width: 100%; border-collapse: collapse; }}
-    th, td {{ text-align: left; padding: 6px 4px; border-bottom: 1px solid #333; font-size: 11px; }}
-    th {{ position: sticky; top: 0; background: #222; z-index: 1; }}
-    tr:hover {{ background: rgba(255, 215, 0, 0.1); }}
+    .page-header {{ 
+        border-bottom: 2px solid #FFD700; padding-bottom: 12px; margin-bottom: 20px; 
+        font-weight: bold; font-size: 18px; color: #FFD700; text-transform: uppercase;
+    }}
+    
+    /* Stats & Bars */
+    .stat-section {{ margin-bottom: 25px; }}
+    .stat-label {{ font-size: 12px; display: flex; justify-content: space-between; margin-bottom: 5px; }}
+    .bar-bg {{ background: #333; height: 10px; border-radius: 5px; overflow: hidden; }}
+    .bar-fill {{ background: #00F5FF; height: 100%; transition: 0.8s ease-out; }}
+    .bar-fill.gold {{ background: #FFD700; }}
+
+    table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
+    th, td {{ text-align: left; padding: 12px 8px; border-bottom: 1px solid #333; font-size: 13px; }}
+    th {{ color: #888; font-size: 11px; }}
+    tr:hover {{ background: rgba(255, 215, 0, 0.08); }}
+    
+    /* Close Button */
+    .close-binder {{
+        margin-top: 20px; text-align: center; color: #555; font-size: 10px; cursor: pointer;
+    }}
+    .close-binder:hover {{ color: #FF4500; }}
 </style>
 
-<div id="stats-panel">
-    <div class="toggle-stats-btn" onclick="document.getElementById('stats-panel').classList.toggle('active')">📊</div>
-    
-    <div class="panel-header">BLOODLINE RATIOS</div>
-    <div id="bloodline-list"></div>
-    
-    <div class="panel-header" style="margin-top:20px;">TOP 16 RACERS</div>
-    <div class="table-container">
+<div id="binder-container">
+    <div class="tab-stack">
+        <div class="binder-tab active-tab" onclick="openTab(0)" title="Leaderboard">🏆</div>
+        <div class="binder-tab" onclick="openTab(1)" title="Generation Stats">📈</div>
+        <div class="binder-tab" onclick="openTab(2)" title="Genetic Breakdown">🧬</div>
+    </div>
+
+    <div id="page-0" class="binder-page active-page">
+        <div class="page-header">Top 16 Speedsters</div>
         <table>
-            <thead><tr><th>NAME</th><th>SPEED</th></tr></thead>
-            <tbody id="top-racers-body"></tbody>
+            <thead><tr><th>RANK</th><th>HORSE</th><th>SPD</th></tr></thead>
+            <tbody id="top-16-body"></tbody>
         </table>
+        <div class="close-binder" onclick="document.getElementById('binder-container').classList.remove('active')">CLICK TO MINIMIZE</div>
+    </div>
+
+    <div id="page-1" class="binder-page">
+        <div class="page-header">Performance / Gen</div>
+        <div id="gen-stats-container"></div>
+        <div class="close-binder" onclick="document.getElementById('binder-container').classList.remove('active')">CLICK TO MINIMIZE</div>
+    </div>
+
+    <div id="page-2" class="binder-page">
+        <div class="page-header">Genetic Split (Alive)</div>
+        <div id="blood-alive-container" class="stat-section"></div>
+        <div class="page-header">Genetic Split (Total)</div>
+        <div id="blood-all-container" class="stat-section"></div>
+        <div class="close-binder" onclick="document.getElementById('binder-container').classList.remove('active')">CLICK TO MINIMIZE</div>
     </div>
 </div>
 
@@ -256,30 +319,54 @@ js_script = f"""
 <script>
 var ancestorMap = {anc_json};
 var descendantMap = {desc_json};
-var statsData = {stats_json};
+var stats = {stats_json};
 var currentMode = 'ancestors'; 
 var currentHighlighted = null;
+
+function openTab(index) {{
+    document.getElementById('binder-container').classList.add('active');
+    document.querySelectorAll('.binder-page').forEach(p => p.classList.remove('active-page'));
+    document.querySelectorAll('.binder-tab').forEach(t => t.classList.remove('active-tab'));
+    document.getElementById('page-' + index).classList.add('active-page');
+    document.querySelectorAll('.binder-tab')[index].classList.add('active-tab');
+}}
 
 window.addEventListener('load', function() {{
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 
-    // 1. POPULATE STATS PANEL (Bloodlines)
-    const list = document.getElementById('bloodline-list');
-    Object.entries(statsData.counts).forEach(([key, val]) => {{
-        list.innerHTML += `<div class="stats-row"><span>${{key}}</span><span style="color:#00F5FF">${{val}}</span></div>`;
+    // 1. Populate Leaderboard
+    const t16Body = document.getElementById('top-16-body');
+    stats.top_16.forEach((h, i) => {{
+        t16Body.innerHTML += `<tr><td>#${{i+1}}</td><td>${{h.Name}}</td><td style="color:#FFD700; font-weight:bold;">${{h.Speed}}</td></tr>`;
     }});
 
-    // 2. POPULATE TOP 16 TABLE
-    const tableBody = document.getElementById('top-racers-body');
-    statsData.top_16.forEach((horse, index) => {{
-        let rankColor = (index < 3) ? '#FFD700' : '#ccc'; // Gold for top 3
-        tableBody.innerHTML += `<tr>
-            <td style="color:${{rankColor}}">${{index + 1}}. ${{horse.Name}}</td>
-            <td style="color:#00F5FF">${{horse.Speed}}</td>
-        </tr>`;
+    // 2. Populate Gen Averages
+    const genCont = document.getElementById('gen-stats-container');
+    const maxSpeedAcrossGens = Math.max(...Object.values(stats.avg_speed));
+    Object.entries(stats.avg_speed).forEach(([gen, spd]) => {{
+        let barWidth = (spd / maxSpeedAcrossGens) * 100;
+        genCont.innerHTML += `
+            <div class="stat-section">
+                <div class="stat-label"><span>Generation ${{gen}}</span><span>Avg: ${{spd}}</span></div>
+                <div class="bar-bg"><div class="bar-fill" style="width:${{barWidth}}%"></div></div>
+            </div>`;
     }});
 
-    // 3. HIGHLIGHTING LOGIC
+    // 3. Populate Bloodlines
+    const renderBlood = (data, containerId) => {{
+        const cont = document.getElementById(containerId);
+        Object.entries(data).forEach(([name, val]) => {{
+            cont.innerHTML += `
+                <div class="stat-section">
+                    <div class="stat-label"><span>${{name}}</span><span>${{val}}%</span></div>
+                    <div class="bar-bg"><div class="bar-fill gold" style="width:${{val}}%"></div></div>
+                </div>`;
+        }});
+    }};
+    renderBlood(stats.blood_alive, 'blood-alive-container');
+    renderBlood(stats.blood_all, 'blood-all-container');
+
+    // --- INTEGRATED INTERACTION LOGIC ---
     function toggleMode() {{
         currentMode = (currentMode === 'ancestors') ? 'descendants' : 'ancestors';
         var textEl = document.getElementById('mode-text');
@@ -291,30 +378,10 @@ window.addEventListener('load', function() {{
     document.getElementById('mode-ui').onclick = toggleMode;
     document.addEventListener('keydown', (e) => {{ if(e.key.toLowerCase() === 'm') toggleMode(); }});
 
-    function resetToDefault() {{
-        var opacities = [];
-        var widths = [];
-        for(var i=0; i < graphDiv.data.length; i++){{
-            var trace = graphDiv.data[i];
-            if (trace.name === "line_parent") opacities.push(0.30);
-            else if (trace.name === "line_child") opacities.push(0.45);
-            else if (trace.name === "glow") opacities.push(0.2);
-            else opacities.push(1.0);
-            
-            if (trace.name === "line_child") widths.push(2.5);
-            else if (trace.name === "line_parent") widths.push(1.5);
-            else widths.push(null);
-        }}
-        Plotly.restyle(graphDiv, {{ 'opacity': opacities, 'line.width': widths }});
-        currentHighlighted = null;
-    }}
-
     function highlightLogic(selectedHorse) {{
         var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
         var relatedSet = targetMap[selectedHorse] || [selectedHorse];
-        
-        var newOpacities = [];
-        var newWidths = [];
+        var newOpacities = []; var newWidths = [];
 
         for(var i=0; i < graphDiv.data.length; i++){{
             var trace = graphDiv.data[i];
@@ -327,40 +394,32 @@ window.addEventListener('load', function() {{
             }} else if (trace.name.includes("line")) {{
                 isRelated = relatedSet.includes(traceHorseName) && (traceHorseName !== selectedHorse || currentMode === 'ancestors');
             }}
-
-            if (isRelated) {{
-                newOpacities.push(1.0);
-                newWidths.push(trace.name.includes("line") ? 5.0 : null);
-            }} else {{
-                newOpacities.push(0.05);
-                newWidths.push(trace.name.includes("line") ? 0.1 : null);
-            }}
+            newOpacities.push(isRelated ? 1.0 : 0.05);
+            newWidths.push(isRelated && trace.name.includes("line") ? 5.0 : (trace.name.includes("line") ? 0.1 : null));
         }}
         Plotly.restyle(graphDiv, {{ 'opacity': newOpacities, 'line.width': newWidths }});
     }}
 
-    // 4. PLOTLY CLICK EVENTS
     graphDiv.on('plotly_click', function(data){{
         if (!data || !data.points) return;
         var pt = data.points[0];
         var rawPointData = pt.customdata;
-        var selectedHorse = (rawPointData && typeof rawPointData === 'object') 
-                            ? (rawPointData.child || rawPointData[0]) 
-                            : (Array.isArray(rawPointData) ? rawPointData[0] : rawPointData);
-
+        var selectedHorse = (rawPointData && typeof rawPointData === 'object') ? (rawPointData.child || rawPointData[0]) : (Array.isArray(rawPointData) ? rawPointData[0] : rawPointData);
         if (!selectedHorse) return;
 
         if (currentHighlighted === selectedHorse) {{
-            resetToDefault();
+            // Reset to default
+            Plotly.restyle(graphDiv, {{ 'opacity': graphDiv.data.map(t => t.name === "line_parent" ? 0.3 : (t.name === "line_child" ? 0.45 : (t.name === "glow" ? 0.2 : 1.0))), 'line.width': graphDiv.data.map(t => t.name === "line_child" ? 2.5 : (t.name === "line_parent" ? 1.5 : null)) }});
+            currentHighlighted = null;
         }} else {{
             currentHighlighted = selectedHorse;
             highlightLogic(selectedHorse);
         }}
     }});
 
-    graphDiv.on('plotly_doubleclick', resetToDefault);
-    graphDiv.addEventListener('mousedown', function(e) {{
-        if (e.target.classList.contains('nsewdrag')) resetToDefault();
+    graphDiv.on('plotly_doubleclick', () => {{
+         Plotly.restyle(graphDiv, {{ 'opacity': graphDiv.data.map(t => t.name === "line_parent" ? 0.3 : (t.name === "line_child" ? 0.45 : (t.name === "glow" ? 0.2 : 1.0))), 'line.width': graphDiv.data.map(t => t.name === "line_child" ? 2.5 : (t.name === "line_parent" ? 1.5 : null)) }});
+         currentHighlighted = null;
     }});
 }});
 </script>
@@ -368,5 +427,3 @@ window.addEventListener('load', function() {{
 
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
-
-print("Top 16 Stats Panel and genealogy tree integrated successfully.")
