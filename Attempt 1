@@ -190,13 +190,61 @@ fig.update_layout(
 )
 
 # =====================================================
-# 4. FULLY RESTORED & FIXED JS
+# 4. FULLY INTEGRATED UI, STATS (TOP 16) & INTERACTION
 # =====================================================
+# Calculate data for the Stats Panel - now grabbing Top 16
+bloodline_counts = df['OriginBlood'].value_counts().to_dict()
+top_16_speed = df.nlargest(16, 'Speed')[['Name', 'Speed']].to_dict('records')
+
 anc_json = json.dumps(ancestor_map)
 desc_json = json.dumps(final_desc_map)
+stats_json = json.dumps({"counts": bloodline_counts, "top_16": top_16_speed})
+
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
 
-ui_html = """
+ui_html = f"""
+<style>
+    /* Stats Panel Styling */
+    #stats-panel {{
+        position: fixed; top: 20px; right: -320px; width: 300px; 
+        background: rgba(15, 15, 15, 0.98); border: 1px solid #444; color: white;
+        padding: 20px; border-radius: 8px 0 0 8px; transition: 0.3s; z-index: 10000;
+        font-family: monospace; box-shadow: -5px 0 15px rgba(0,0,0,0.8);
+        max-height: 90vh; overflow-y: auto;
+    }}
+    #stats-panel.active {{ right: 0; }}
+    .toggle-stats-btn {{
+        position: absolute; left: -45px; top: 0; width: 45px; height: 45px;
+        background: #1a1a1a; border: 1px solid #444; color: #00F5FF;
+        display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 8px 0 0 8px;
+        font-size: 20px;
+    }}
+    .panel-header {{ border-bottom: 1px solid #444; padding-bottom: 8px; margin-bottom: 10px; color: #FFD700; font-size: 14px; font-weight: bold; }}
+    .stats-row {{ display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }}
+    
+    /* Scrollable Table for Top 16 */
+    .table-container {{ max-height: 400px; overflow-y: auto; margin-top: 10px; border: 1px solid #333; }}
+    table {{ width: 100%; border-collapse: collapse; }}
+    th, td {{ text-align: left; padding: 6px 4px; border-bottom: 1px solid #333; font-size: 11px; }}
+    th {{ position: sticky; top: 0; background: #222; z-index: 1; }}
+    tr:hover {{ background: rgba(255, 215, 0, 0.1); }}
+</style>
+
+<div id="stats-panel">
+    <div class="toggle-stats-btn" onclick="document.getElementById('stats-panel').classList.toggle('active')">📊</div>
+    
+    <div class="panel-header">BLOODLINE RATIOS</div>
+    <div id="bloodline-list"></div>
+    
+    <div class="panel-header" style="margin-top:20px;">TOP 16 RACERS</div>
+    <div class="table-container">
+        <table>
+            <thead><tr><th>NAME</th><th>SPEED</th></tr></thead>
+            <tbody id="top-racers-body"></tbody>
+        </table>
+    </div>
+</div>
+
 <div id="mode-ui" style="position:fixed; top:20px; left:20px; z-index:9999; background:rgba(20,20,20,0.95); padding:15px; border:1px solid #444; color:white; font-family:monospace; border-radius:8px; cursor:pointer; user-select:none; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
     <div id="mode-text" style="color:#00F5FF; font-weight:bold; font-size:16px;">ANCESTORS</div>
     <div style="margin-top:5px; font-size:9px; color:#666;">CLICK TO TOGGLE | PRESS 'M'</div>
@@ -208,12 +256,30 @@ js_script = f"""
 <script>
 var ancestorMap = {anc_json};
 var descendantMap = {desc_json};
+var statsData = {stats_json};
 var currentMode = 'ancestors'; 
 var currentHighlighted = null;
 
 window.addEventListener('load', function() {{
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 
+    // 1. POPULATE STATS PANEL (Bloodlines)
+    const list = document.getElementById('bloodline-list');
+    Object.entries(statsData.counts).forEach(([key, val]) => {{
+        list.innerHTML += `<div class="stats-row"><span>${{key}}</span><span style="color:#00F5FF">${{val}}</span></div>`;
+    }});
+
+    // 2. POPULATE TOP 16 TABLE
+    const tableBody = document.getElementById('top-racers-body');
+    statsData.top_16.forEach((horse, index) => {{
+        let rankColor = (index < 3) ? '#FFD700' : '#ccc'; // Gold for top 3
+        tableBody.innerHTML += `<tr>
+            <td style="color:${{rankColor}}">${{index + 1}}. ${{horse.Name}}</td>
+            <td style="color:#00F5FF">${{horse.Speed}}</td>
+        </tr>`;
+    }});
+
+    // 3. HIGHLIGHTING LOGIC
     function toggleMode() {{
         currentMode = (currentMode === 'ancestors') ? 'descendants' : 'ancestors';
         var textEl = document.getElementById('mode-text');
@@ -252,7 +318,6 @@ window.addEventListener('load', function() {{
 
         for(var i=0; i < graphDiv.data.length; i++){{
             var trace = graphDiv.data[i];
-            // Extract horse name from customdata (handles both strings and objects)
             var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
             var traceHorseName = (rawData && typeof rawData === 'object') ? rawData.child : rawData;
 
@@ -260,9 +325,6 @@ window.addEventListener('load', function() {{
             if (trace.name === "node" || trace.name === "glow") {{
                 isRelated = relatedSet.includes(traceHorseName);
             }} else if (trace.name.includes("line")) {{
-                // For lines, customdata is the child name. 
-                // In ancestor mode, we highlight lines leading to ancestors.
-                // In descendant mode, we highlight lines leading to descendants.
                 isRelated = relatedSet.includes(traceHorseName) && (traceHorseName !== selectedHorse || currentMode === 'ancestors');
             }}
 
@@ -277,12 +339,11 @@ window.addEventListener('load', function() {{
         Plotly.restyle(graphDiv, {{ 'opacity': newOpacities, 'line.width': newWidths }});
     }}
 
+    // 4. PLOTLY CLICK EVENTS
     graphDiv.on('plotly_click', function(data){{
         if (!data || !data.points) return;
-        
         var pt = data.points[0];
         var rawPointData = pt.customdata;
-        // Logic to extract name from complex Plotly customdata structures
         var selectedHorse = (rawPointData && typeof rawPointData === 'object') 
                             ? (rawPointData.child || rawPointData[0]) 
                             : (Array.isArray(rawPointData) ? rawPointData[0] : rawPointData);
@@ -297,7 +358,6 @@ window.addEventListener('load', function() {{
         }}
     }});
 
-    // Double click or clicking background resets
     graphDiv.on('plotly_doubleclick', resetToDefault);
     graphDiv.addEventListener('mousedown', function(e) {{
         if (e.target.classList.contains('nsewdrag')) resetToDefault();
@@ -309,4 +369,4 @@ window.addEventListener('load', function() {{
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
 
-print("Full build complete. All UI elements restored and logic fixed.")
+print("Top 16 Stats Panel and genealogy tree integrated successfully.")
