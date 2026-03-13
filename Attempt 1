@@ -253,6 +253,9 @@ fig.update_layout(
 # =====================================================
 # 4. BINDER UI DATA & JSON DUMPS
 # =====================================================
+# =====================================================
+# 4. BINDER UI DATA & JSON DUMPS
+# =====================================================
 top_16_speed = df.nlargest(16, 'Speed')[['Name', 'Speed']].to_dict('records')
 gen_speeds = {}
 for name, data in data_registry.items():
@@ -279,6 +282,8 @@ stats_json = json.dumps({
 })
 
 anc_json, desc_json, js_color_map = json.dumps(ancestor_map), json.dumps(final_desc_map), json.dumps(origin_colors)
+
+# Generate the base Plotly HTML
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True, 'doubleClick': False})
 
 ui_html = f"""
@@ -580,5 +585,10 @@ window.addEventListener('load', function() {{
 </script>
 """
 
+# SURGICAL INJECTION: This keeps your graph full screen.
+final_output = html_content.replace('</body>', js_script + '</body>')
+
 with open("index.html", "w", encoding="utf-8") as f:
-    f.write(html_content.replace('</body>', js_script + '</body>'))
+    f.write(final_output)
+
+print("Process complete. 'index.html' updated with full-screen tree and binder.")
