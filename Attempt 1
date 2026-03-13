@@ -118,18 +118,20 @@ for level, names in generation_groups.items():
 # =====================================================
 fig = go.Figure()
 
+# --- PARENT LINES ---
 for name, row in horse_db.items():
     p1_n, p2_n = row["Parent1"], row["Parent2"]
     if p1_n in pos and p2_n in pos:
         p1, p2 = pos[p1_n], pos[p2_n]
         fig.add_trace(go.Scatter(
             x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
-            line=dict(color="rgba(180,180,180,0.20)", width=1.5),
-            opacity=0.30, hoverinfo='skip', showlegend=False,
+            line=dict(color="rgba(180,180,180,0.30)", width=1.5),
+            hoverinfo='skip', showlegend=False,
             customdata=[{"child": name, "parents": [p1_n, p2_n]}] * 2, 
             name="line_parent"
         ))
 
+# --- CHILD CURVES ---
 for name, row in horse_db.items():
     p1_n, p2_n = row["Parent1"], row["Parent2"]
     if p1_n in pos and p2_n in pos:
@@ -146,6 +148,7 @@ for name, row in horse_db.items():
             name="line_child"
         ))
 
+# --- NODES & GLOW ---
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
     row = horse_db[name]
@@ -160,13 +163,7 @@ for name, (x, y) in pos.items():
     dna_str = "<br>".join([f"  • {k}: {v*100:.1f}%" for k, v in dna_sorted if v > 0])
     p1, p2 = row.get("Parent1"), row.get("Parent2")
     parent_info = f"Parents: {p1} & {p2}<br>Breeding Roll: {h_data['mutation']:.2f}" if p1 and p2 else "Foundation Horse"
-
-    hover_label = (
-        f"<b>{display_name}</b> ({'DEAD' if is_dead else 'ALIVE'})<br>"
-        f"Speed: {row['Speed']}<br>"
-        f"{parent_info}<br>"
-        f"<b>Bloodline Density:</b><br>{dna_str}"
-    )
+    hover_label = f"<b>{display_name}</b> ({'DEAD' if is_dead else 'ALIVE'})<br>Speed: {row['Speed']}<br>{parent_info}<br><b>DNA:</b><br>{dna_str}"
 
     if is_god:
         fig.add_trace(go.Scatter(
@@ -193,7 +190,7 @@ fig.update_layout(
 )
 
 # =====================================================
-# 4. GITHUB PAGES OPTIMIZED JS
+# 4. FULLY RESTORED & FIXED JS
 # =====================================================
 anc_json = json.dumps(ancestor_map)
 desc_json = json.dumps(final_desc_map)
@@ -233,7 +230,7 @@ window.addEventListener('load', function() {{
         var widths = [];
         for(var i=0; i<graphDiv.data.length; i++){{
             var trace = graphDiv.data[i];
-            if (trace.name === "line_parent") opacities.push(0.20);
+            if (trace.name === "line_parent") opacities.push(0.30);
             else if (trace.name === "line_child") opacities.push(0.45);
             else if (trace.name === "glow") opacities.push(0.2);
             else opacities.push(1.0);
@@ -246,22 +243,22 @@ window.addEventListener('load', function() {{
     function highlightLogic(selectedHorse) {{
         var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
         var relatedSet = targetMap[selectedHorse] || [selectedHorse];
-        
         var update = {{ 'opacity': [], 'line.width': [] }};
 
         for(var i=0; i<graphDiv.data.length; i++){{
             var trace = graphDiv.data[i];
-            var data = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
+            var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
             var isRelated = false;
+            var traceHorseName = (typeof rawData === 'object' && rawData !== null) ? rawData.child : rawData;
 
             if (trace.name === "node" || trace.name === "glow") {{
-                isRelated = (data && relatedSet.includes(data));
+                isRelated = (traceHorseName && relatedSet.includes(traceHorseName));
             }} 
             else if (trace.name.includes("line")) {{
                 if (currentMode === 'ancestors') {{
-                    isRelated = relatedSet.includes(data.child);
+                    isRelated = relatedSet.includes(traceHorseName);
                 }} else {{
-                    isRelated = relatedSet.includes(data.child) && data.child !== selectedHorse;
+                    isRelated = relatedSet.includes(traceHorseName) && traceHorseName !== selectedHorse;
                 }}
             }}
 
@@ -281,9 +278,10 @@ window.addEventListener('load', function() {{
             resetToDefault();
             return;
         }}
-
-        var rawData = data.points[0].customdata;
-        var selectedHorse = (typeof rawData === 'object' && rawData.child) ? rawData.child : (Array.isArray(rawData) ? rawData[0] : rawData);
+        var rawPointData = data.points[0].customdata;
+        var selectedHorse = (typeof rawPointData === 'object' && rawPointData !== null && rawPointData.child) 
+                            ? rawPointData.child 
+                            : (Array.isArray(rawPointData) ? rawPointData[0] : rawPointData);
 
         if (currentHighlighted === selectedHorse) {{
             resetToDefault();
@@ -294,11 +292,8 @@ window.addEventListener('load', function() {{
     }});
 
     graphDiv.on('plotly_doubleclick', resetToDefault);
-
     graphDiv.addEventListener('mousedown', function(e) {{
-        if (e.target.classList.contains('nsewdrag')) {{
-             resetToDefault();
-        }}
+        if (e.target.classList.contains('nsewdrag')) resetToDefault();
     }});
 }});
 </script>
@@ -307,4 +302,4 @@ window.addEventListener('load', function() {{
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
 
-print("Full build complete. Aesthetics restored, logic hardened.")
+print("Full build complete. All UI elements restored and logic fixed.")
