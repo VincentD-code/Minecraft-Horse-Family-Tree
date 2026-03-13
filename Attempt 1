@@ -164,7 +164,7 @@ fig.update_layout(
 )
 
 # =====================================================
-# 4. JAVASCRIPT INJECTION
+# 4. JAVASCRIPT INJECTION (UPDATED FOR NODE HIGHLIGHTING)
 # =====================================================
 anc_json = json.dumps(ancestor_map)
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
@@ -180,19 +180,25 @@ function resetToDefault() {{
     var widths = [];
     for(var i=0; i<graphDiv.data.length; i++){{
         var trace = graphDiv.data[i];
+        // Reset to original design opacities
         if (trace.name === "line_parent") opacities.push(0.20);
         else if (trace.name === "line_child") opacities.push(0.45);
         else if (trace.name === "glow") opacities.push(0.2);
-        else opacities.push(1.0); // nodes
+        else opacities.push(1.0); // Standard nodes
         
-        widths.push(trace.name === "line_child" ? 2.5 : (trace.name === "line_parent" ? 1.5 : null));
+        // Reset line widths
+        if (trace.name === "line_child") widths.push(2.5);
+        else if (trace.name === "line_parent") widths.push(1.5);
+        else widths.push(null);
     }}
     Plotly.restyle(graphDiv, {{ 'opacity': opacities, 'line.width': widths }});
     currentHighlighted = null;
 }}
 
 graphDiv.on('plotly_click', function(data){{
-    var selectedHorse = data.points[0].customdata;
+    if (!data.points[0].customdata) return;
+    var selectedHorse = data.points[0].customdata[0];
+    
     if (currentHighlighted === selectedHorse) {{
         resetToDefault();
         return;
@@ -201,24 +207,29 @@ graphDiv.on('plotly_click', function(data){{
     var ancestors = ancestorMap[selectedHorse] || [];
     currentHighlighted = selectedHorse;
     
-    var update = {{ 'opacity': [], 'line.width': [] }};
+    var opacities = [];
+    var widths = [];
 
     for(var i=0; i<graphDiv.data.length; i++){{
         var trace = graphDiv.data[i];
-        var traceHorse = trace.customdata ? trace.customdata[0] : null;
+        var traceHorse = (trace.customdata && trace.customdata.length > 0) ? trace.customdata[0] : null;
         
+        // Check if this trace belongs to the selected horse or its ancestors
         if (traceHorse && ancestors.includes(traceHorse)) {{
-            update.opacity.push(1.0);
-            update['line.width'].push(trace.name.includes("line") ? 5 : null);
-        }} else if (trace.name === "glow") {{
-             update.opacity.push(0.02);
-             update['line.width'].push(null);
+            opacities.push(1.0); // Full brightness for ancestor nodes and lines
+            // Make lines thicker to stand out
+            widths.push(trace.name.includes("line") ? 5 : (trace.marker ? trace.marker.line.width : null));
         }} else {{
-            update.opacity.push(0.04);
-            update['line.width'].push(trace.name.includes("line") ? 0.5 : null);
+            // Dim everything else
+            opacities.push(0.05); 
+            widths.push(trace.name.includes("line") ? 0.5 : (trace.marker ? 0.5 : null));
         }}
     }}
-    Plotly.restyle(graphDiv, update);
+    
+    Plotly.restyle(graphDiv, {{ 
+        'opacity': opacities, 
+        'line.width': widths
+    }});
 }});
 
 graphDiv.on('plotly_doubleclick', function() {{
@@ -229,5 +240,3 @@ graphDiv.on('plotly_doubleclick', function() {{
 
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
-
-print("Updated parent lines to 0.20 opacity. Reset logic verified.")
