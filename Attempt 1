@@ -107,7 +107,7 @@ for name, row in horse_db.items():
         p1, p2 = pos[p1_n], pos[p2_n]
         fig.add_trace(go.Scatter(
             x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
-            line=dict(color="rgba(180,180,180,0.20)", width=1.5), # Opacity set to 0.20
+            line=dict(color="rgba(180,180,180,0.20)", width=1.5),
             hoverinfo='skip', showlegend=False,
             customdata=[name], name="line_parent"
         ))
@@ -164,7 +164,7 @@ fig.update_layout(
 )
 
 # =====================================================
-# 4. JAVASCRIPT INJECTION (FIXED FOR STABILITY)
+# 4. JAVASCRIPT INJECTION (FIXED SYNTAX)
 # =====================================================
 anc_json = json.dumps(ancestor_map)
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
@@ -177,29 +177,25 @@ var currentHighlighted = null;
 
 function resetToDefault() {{
     var opacities = [];
-    var widths = [];
+    var lineWidths = [];
     
     for(var i=0; i<graphDiv.data.length; i++){{
         var trace = graphDiv.data[i];
-        
-        // Reset Opacities
         if (trace.name === "line_parent") opacities.push(0.20);
         else if (trace.name === "line_child") opacities.push(0.45);
         else if (trace.name === "glow") opacities.push(0.2);
         else opacities.push(1.0); 
         
-        // Reset Widths (Only for lines)
-        if (trace.name === "line_child") widths.push(2.5);
-        else if (trace.name === "line_parent") widths.push(1.5);
-        else widths.push(trace.line ? trace.line.width : null);
+        if (trace.name === "line_child") lineWidths.push(2.5);
+        else if (trace.name === "line_parent") lineWidths.push(1.5);
+        else lineWidths.push(null); 
     }}
-    
-    Plotly.restyle(graphDiv, {{ 'opacity': opacities, 'line.width': widths }});
+    Plotly.restyle(graphDiv, {{ 'opacity': opacities, 'line.width': lineWidths }});
     currentHighlighted = null;
 }}
 
 graphDiv.on('plotly_click', function(data){{
-    if (!data.points || !data.points[0].customdata) return;
+    if(!data.points || !data.points[0].customdata) return;
     var selectedHorse = data.points[0].customdata[0];
     
     if (currentHighlighted === selectedHorse) {{
@@ -211,36 +207,32 @@ graphDiv.on('plotly_click', function(data){{
     currentHighlighted = selectedHorse;
     
     var opacities = [];
-    var widths = [];
+    var lineWidths = [];
 
     for(var i=0; i<graphDiv.data.length; i++){{
         var trace = graphDiv.data[i];
-        var traceHorse = (trace.customdata) ? trace.customdata[0] : null;
+        var traceHorse = (trace.customdata && trace.customdata.length > 0) ? trace.customdata[0] : null;
         
-        // Logic: Is this trace part of the ancestor tree?
         if (traceHorse && ancestors.includes(traceHorse)) {{
-            opacities.push(1.0);
-            // Thicken lines, keep node borders original
-            if (trace.name && trace.name.includes("line")) {{
-                widths.push(5.0);
+            opacities.push(1.0); 
+            if(trace.name && trace.name.includes("line")) {{
+                lineWidths.push(5.0);
             }} else {{
-                widths.push(trace.line ? trace.line.width : null);
+                lineWidths.push(null);
             }}
         }} else {{
-            // Dim non-ancestors
-            opacities.push(0.05);
-            if (trace.name && trace.name.includes("line")) {{
-                widths.push(0.5);
+            opacities.push(0.04);
+            if(trace.name && trace.name.includes("line")) {{
+                lineWidths.push(0.5);
             }} else {{
-                widths.push(trace.line ? trace.line.width : null);
+                lineWidths.push(null);
             }}
         }}
     }}
     
-    // Apply updates
     Plotly.restyle(graphDiv, {{ 
-        'opacity': opacities,
-        'line.width': widths
+        'opacity': opacities, 
+        'line.width': lineWidths 
     }});
 }});
 
@@ -253,4 +245,4 @@ graphDiv.on('plotly_doubleclick', function() {{
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
 
-print("Fix applied: Property checks added to prevent black-screen crashes.")
+print("Syntax fixed. JavaScript curly braces have been escaped for Python f-string compatibility.")
