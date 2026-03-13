@@ -262,24 +262,40 @@ for name, row in horse_db.items():
             name="line_child"
         ))
 
+# --- PRE-LOOP RANKING LOGIC ---
+# Get the names of the top 4 horses by speed to assign podium honors
+top_four = df.nlargest(4, 'Speed')['Name'].tolist()
+rank_colors = {0: "#FFD700", 1: "#C0C0C0", 2: "#CD7F32"} # Gold, Silver, Bronze
+rank_shapes = {0: "star", 1: "diamond", 2: "triangle-up", 3: "square"}
+
 # --- NODES & GLOW ---
 for name, (x, y) in pos.items():
 
     h_data = data_registry[name]
     row = horse_db[name]
 
-    is_god = (name == fastest_horse_name)
+    # New Ranking Variables
+    rank = top_four.index(name) if name in top_four else None
+    is_god = (rank == 0) # Fastest horse is Rank 0
     is_dead = row.get("Status") == "Dead"
 
     node_fill = "#050505" if is_dead else h_data["color"]
 
-    line_width = 3 if (is_god or is_dead) else 1.5
+    # Assign line width: thicker for podium finishers
+    line_width = 4 if rank is not None else 1.5
+    if is_dead and rank is None: line_width = 3
 
-    display_name = (
-        f"★ GOD HORSE: {name.upper()} ★"
-        if is_god else name.upper()
-    )
+    # Dynamic Display Name
+    if is_god:
+        display_name = f"★ GOD HORSE: {name.upper()} ★"
+    elif rank == 1:
+        display_name = f"🥈 {name.upper()}"
+    elif rank == 2:
+        display_name = f"🥉 {name.upper()}"
+    else:
+        display_name = name.upper()
 
+    # DNA & Hover Logic (Preserved exactly as requested)
     dna_sorted = sorted(
         h_data["dna"].items(),
         key=lambda x: x[1],
@@ -306,18 +322,24 @@ for name, (x, y) in pos.items():
         f"<b>DNA:</b><br>{dna_str}"
     )
 
-    if is_god:
+    # --- 1. THE AURA (GOLD, SILVER, BRONZE) ---
+    if rank is not None and rank <= 2:
         fig.add_trace(go.Scatter(
             x=[x],
             y=[y],
             mode='markers',
-            marker=dict(size=35, color=h_data["color"], opacity=0.2),
+            marker=dict(
+                size=55 if is_god else 45, 
+                color=rank_colors[rank], 
+                opacity=0.25
+            ),
             hoverinfo='skip',
             showlegend=False,
             name="glow",
             customdata=[name]
         ))
 
+    # --- 2. THE MAIN NODE ---
     fig.add_trace(go.Scatter(
         x=[x],
         y=[y],
@@ -325,12 +347,12 @@ for name, (x, y) in pos.items():
         text=[display_name],
         textposition="bottom center",
         marker=dict(
-            size=22 if is_god else 14,
+            size=26 if rank is not None else 14, # Larger for top 4
             color=node_fill,
-            symbol="star" if is_god else "circle",
+            symbol=rank_shapes.get(rank, "circle"), # Star, Diamond, Triangle, Square, or Circle
             line=dict(
                 width=line_width,
-                color="#FFD700" if is_god else h_data["color"]
+                color=rank_colors.get(rank, h_data["color"]) # Metallic or DNA color
             )
         ),
         hovertext=hover_label,
@@ -339,6 +361,7 @@ for name, (x, y) in pos.items():
         name="node"
     ))
 
+# --- UPDATED LAYOUT ---
 fig.update_layout(
     template="plotly_dark",
     paper_bgcolor='#050505',
@@ -347,7 +370,7 @@ fig.update_layout(
     yaxis=dict(visible=False),
     clickmode='event+select',
     showlegend=False,
-    margin=dict(t=50, b=50, l=50, r=50),
+    margin=dict(t=120, b=50, l=50, r=50), # Increased top margin for the fancy title
     hoverlabel=dict(
         bgcolor="#111",
         font_size=12,
