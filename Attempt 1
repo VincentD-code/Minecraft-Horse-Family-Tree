@@ -14,10 +14,15 @@ if not os.path.exists(csv_filename):
     exit()
 
 df = pd.read_csv(csv_filename).fillna("")
+
 for col in df.select_dtypes(include=['object']).columns:
     df[col] = df[col].astype(str).str.strip()
 
 df = df.replace("Void Born", "Celestial Grass")
+
+# SAFE SPEED CONVERSION
+df['Speed'] = pd.to_numeric(df['Speed'], errors='coerce').fillna(0)
+
 horse_db = df.set_index("Name").to_dict('index')
 
 origin_colors = {
@@ -30,211 +35,394 @@ origin_colors = {
     "Unknown": "#444444"
 }
 
-fastest_horse_name = df.loc[pd.to_numeric(df['Speed']).idxmax(), 'Name']
+fastest_horse_name = df.loc[df['Speed'].idxmax(), 'Name']
 
 def mix_rgb_colors(dna_weights):
-    if not dna_weights: return "#444444"
+    if not dna_weights:
+        return "#444444"
+
     r, g, b = 0, 0, 0
+
     for bloodline, percentage in dna_weights.items():
         hex_c = origin_colors.get(bloodline, "#444444").lstrip('#')
         rgb = tuple(int(hex_c[i:i+2], 16) for i in (0, 2, 4))
+
         r += (rgb[0] / 255) * percentage
         g += (rgb[1] / 255) * percentage
         b += (rgb[2] / 255) * percentage
+
     return f'rgb({int(r*255)},{int(g*255)},{int(b*255)})'
+
 
 data_registry = {}
 ancestor_map = {}
 
+
 def get_ancestor_list(name):
-    if not name or name not in horse_db: return []
+    if not name or name not in horse_db:
+        return []
+
     p1 = horse_db[name].get("Parent1")
     p2 = horse_db[name].get("Parent2")
+
     ancestors = [name]
-    if p1 and p1 in horse_db: ancestors.extend(get_ancestor_list(p1))
-    if p2 and p2 in horse_db: ancestors.extend(get_ancestor_list(p2))
+
+    if p1 and p1 in horse_db:
+        ancestors.extend(get_ancestor_list(p1))
+
+    if p2 and p2 in horse_db:
+        ancestors.extend(get_ancestor_list(p2))
+
     return list(set(ancestors))
 
+
 def process_horse(name, depth=0):
-    if depth > 25 or name == "" or name not in horse_db: 
+
+    if depth > 25 or name == "" or name not in horse_db:
         return {"dna": {"Unknown": 1.0}, "color": "#444444", "level": 0, "mutation": 0}
-    if name in data_registry: return data_registry[name]
-    
+
+    if name in data_registry:
+        return data_registry[name]
+
     row = horse_db[name]
-    p1, p2 = row.get("Parent1", ""), row.get("Parent2", "")
-    current_speed = float(row.get("Speed") or 0)
-    
+
+    p1 = row.get("Parent1", "")
+    p2 = row.get("Parent2", "")
+
+    current_speed = float(row.get("Speed", 0))
+
     if p1 == "" or p2 == "":
         blood = row.get("OriginBlood", "Unknown")
-        dna, color, level, mutation = {blood: 1.0}, origin_colors.get(blood, "#444444"), 0, 0.0
-    else:
-        res1, res2 = process_horse(p1, depth + 1), process_horse(p2, depth + 1)
-        all_keys = set(res1["dna"].keys()) | set(res2["dna"].keys())
-        dna = {k: (res1["dna"].get(k, 0) + res2["dna"].get(k, 0)) / 2 for k in all_keys}
-        color = mix_rgb_colors(dna)
-        level = max(res1["level"], res2["level"]) + 1
-        mutation = (3 * current_speed) - float(horse_db[p1]['Speed']) - float(horse_db[p2]['Speed'])
 
-    data_registry[name] = {"dna": dna, "color": color, "level": level, "mutation": mutation}
+        dna = {blood: 1.0}
+        color = origin_colors.get(blood, "#444444")
+        level = 0
+        mutation = 0.0
+
+    else:
+
+        res1 = process_horse(p1, depth + 1)
+        res2 = process_horse(p2, depth + 1)
+
+        all_keys = set(res1["dna"].keys()) | set(res2["dna"].keys())
+
+        dna = {
+            k: (res1["dna"].get(k, 0) + res2["dna"].get(k, 0)) / 2
+            for k in all_keys
+        }
+
+        color = mix_rgb_colors(dna)
+
+        level = max(res1["level"], res2["level"]) + 1
+
+        mutation = (
+            (3 * current_speed)
+            - float(horse_db[p1].get('Speed', 0))
+            - float(horse_db[p2].get('Speed', 0))
+        )
+
+    data_registry[name] = {
+        "dna": dna,
+        "color": color,
+        "level": level,
+        "mutation": mutation
+    }
+
     ancestor_map[name] = get_ancestor_list(name)
+
     return data_registry[name]
 
-for name in horse_db: process_horse(name)
+
+for name in horse_db:
+    process_horse(name)
+
 
 descendant_rel_map = {name: [] for name in horse_db}
+
 for child, row in horse_db.items():
+
     for p in [row.get("Parent1"), row.get("Parent2")]:
         if p and p in descendant_rel_map:
             descendant_rel_map[p].append(child)
 
+
 full_descendant_map = {}
+
+
 def get_all_descendants(name):
-    if name in full_descendant_map: return full_descendant_map[name]
+
+    if name in full_descendant_map:
+        return full_descendant_map[name]
+
     direct = descendant_rel_map.get(name, [])
+
     all_desc = list(direct)
+
     for child in direct:
         all_desc.extend(get_all_descendants(child))
+
     full_descendant_map[name] = list(set(all_desc))
+
     return full_descendant_map[name]
 
-final_desc_map = {name: get_all_descendants(name) + [name] for name in horse_db}
+
+final_desc_map = {
+    name: get_all_descendants(name) + [name]
+    for name in horse_db
+}
 
 # =====================================================
 # 2. POSITIONING
 # =====================================================
+
 generation_groups = {}
+
 for name, data in data_registry.items():
     generation_groups.setdefault(data["level"], []).append(name)
 
 pos = {}
+
 for level, names in generation_groups.items():
-    names.sort(key=lambda x: float(horse_db[x].get("Speed", 0) or 0), reverse=True)
+
+    names.sort(
+        key=lambda x: horse_db[x].get("Speed", 0),
+        reverse=True
+    )
+
     width = len(names) * 20.0
+
     for idx, name in enumerate(names):
-        pos[name] = ((idx * 20.0) - (width / 2), -level * 15.0) 
+
+        pos[name] = (
+            (idx * 20.0) - (width / 2),
+            -level * 15.0
+        )
 
 # =====================================================
 # 3. PLOTLY TREE BUILDER
 # =====================================================
+
 fig = go.Figure()
 
 # --- PARENT LINES ---
 for name, row in horse_db.items():
-    p1_n, p2_n = row["Parent1"], row["Parent2"]
+
+    p1_n = row["Parent1"]
+    p2_n = row["Parent2"]
+
     if p1_n in pos and p2_n in pos:
-        p1, p2 = pos[p1_n], pos[p2_n]
+
+        p1 = pos[p1_n]
+        p2 = pos[p2_n]
+
         fig.add_trace(go.Scatter(
-            x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
+            x=[p1[0], p2[0]],
+            y=[p1[1], p2[1]],
+            mode='lines',
             line=dict(color="rgba(180,180,180,0.30)", width=1.5),
-            hoverinfo='skip', showlegend=False,
-            customdata=[{"child": name, "parents": [p1_n, p2_n]}] * 2, 
+            hoverinfo='skip',
+            showlegend=False,
+            customdata=[{"child": name, "parents": [p1_n, p2_n]}] * 2,
             name="line_parent"
         ))
 
 # --- CHILD CURVES ---
 for name, row in horse_db.items():
-    p1_n, p2_n = row["Parent1"], row["Parent2"]
+
+    if name not in pos:
+        continue
+
+    p1_n = row["Parent1"]
+    p2_n = row["Parent2"]
+
     if p1_n in pos and p2_n in pos:
-        p1, p2, child = pos[p1_n], pos[p2_n], pos[name]
-        mid_x, mid_y = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
+
+        p1 = pos[p1_n]
+        p2 = pos[p2_n]
+        child = pos[name]
+
+        mid_x = (p1[0] + p2[0]) / 2
+        mid_y = (p1[1] + p2[1]) / 2
+
         t = np.linspace(0, 1, 15)
+
         curve_x = (1-t)**3 * mid_x + 3*(1-t)**2*t * mid_x + 3*(1-t)*t**2 * child[0] + t**3 * child[0]
         curve_y = (1-t)**3 * mid_y + 3*(1-t)**2*t * (mid_y - 4) + 3*(1-t)*t**2 * (child[1] + 4) + t**3 * child[1]
+
         fig.add_trace(go.Scatter(
-            x=curve_x, y=curve_y, mode='lines', 
-            line=dict(color=data_registry[name]["color"], width=2.5), 
-            opacity=0.45, hoverinfo='skip', showlegend=False,
-            customdata=[{"child": name, "parents": [p1_n, p2_n]}] * 15, 
+            x=curve_x,
+            y=curve_y,
+            mode='lines',
+            line=dict(color=data_registry[name]["color"], width=2.5),
+            opacity=0.45,
+            hoverinfo='skip',
+            showlegend=False,
+            customdata=[{"child": name, "parents": [p1_n, p2_n]}] * 15,
             name="line_child"
         ))
 
 # --- NODES & GLOW ---
 for name, (x, y) in pos.items():
+
     h_data = data_registry[name]
     row = horse_db[name]
+
     is_god = (name == fastest_horse_name)
     is_dead = row.get("Status") == "Dead"
-    
+
     node_fill = "#050505" if is_dead else h_data["color"]
+
     line_width = 3 if (is_god or is_dead) else 1.5
-    display_name = f"★ GOD HORSE: {name.upper()} ★" if is_god else name.upper()
-    
-    dna_sorted = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
-    dna_str = "<br>".join([f"  • {k}: {v*100:.1f}%" for k, v in dna_sorted if v > 0])
-    p1, p2 = row.get("Parent1"), row.get("Parent2")
-    parent_info = f"Parents: {p1} & {p2}<br>Breeding Roll: {h_data['mutation']:.2f}" if p1 and p2 else "Foundation Horse"
-    hover_label = f"<b>{display_name}</b> ({'DEAD' if is_dead else 'ALIVE'})<br>Speed: {row['Speed']}<br>{parent_info}<br><b>DNA:</b><br>{dna_str}"
+
+    display_name = (
+        f"★ GOD HORSE: {name.upper()} ★"
+        if is_god else name.upper()
+    )
+
+    dna_sorted = sorted(
+        h_data["dna"].items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    dna_str = "<br>".join(
+        [f"  • {k}: {v*100:.1f}%" for k, v in dna_sorted if v > 0]
+    )
+
+    p1 = row.get("Parent1")
+    p2 = row.get("Parent2")
+
+    parent_info = (
+        f"Parents: {p1} & {p2}<br>Breeding Roll: {h_data['mutation']:.2f}"
+        if p1 and p2 else "Foundation Horse"
+    )
+
+    hover_label = (
+        f"<b>{display_name}</b> "
+        f"({'DEAD' if is_dead else 'ALIVE'})<br>"
+        f"Speed: {row['Speed']}<br>"
+        f"{parent_info}<br>"
+        f"<b>DNA:</b><br>{dna_str}"
+    )
 
     if is_god:
         fig.add_trace(go.Scatter(
-            x=[x], y=[y], mode='markers',
+            x=[x],
+            y=[y],
+            mode='markers',
             marker=dict(size=35, color=h_data["color"], opacity=0.2),
-            hoverinfo='skip', showlegend=False, name="glow", customdata=[name]
+            hoverinfo='skip',
+            showlegend=False,
+            name="glow",
+            customdata=[name]
         ))
 
     fig.add_trace(go.Scatter(
-        x=[x], y=[y], mode='markers+text',
-        text=[display_name], textposition="bottom center",
-        marker=dict(size=22 if is_god else 14, color=node_fill, symbol="star" if is_god else "circle",
-                    line=dict(width=line_width, color="#FFD700" if is_god else h_data["color"])),
-        hovertext=hover_label, hoverinfo="text",
-        customdata=[name], name="node"
+        x=[x],
+        y=[y],
+        mode='markers+text',
+        text=[display_name],
+        textposition="bottom center",
+        marker=dict(
+            size=22 if is_god else 14,
+            color=node_fill,
+            symbol="star" if is_god else "circle",
+            line=dict(
+                width=line_width,
+                color="#FFD700" if is_god else h_data["color"]
+            )
+        ),
+        hovertext=hover_label,
+        hoverinfo="text",
+        customdata=[name],
+        name="node"
     ))
 
 fig.update_layout(
-    template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
-    xaxis=dict(visible=False), yaxis=dict(visible=False),
-    clickmode='event+select', showlegend=False,
+    template="plotly_dark",
+    paper_bgcolor='#050505',
+    plot_bgcolor='#050505',
+    xaxis=dict(visible=False),
+    yaxis=dict(visible=False),
+    clickmode='event+select',
+    showlegend=False,
     margin=dict(t=50, b=50, l=50, r=50),
-    hoverlabel=dict(bgcolor="#111", font_size=12, font_family="monospace")
+    hoverlabel=dict(
+        bgcolor="#111",
+        font_size=12,
+        font_family="monospace"
+    )
 )
-
-js_color_map = json.dumps(origin_colors)
 
 # =====================================================
 # 4. FULLY INTEGRATED BINDER UI & COMPLETE LOGIC ENGINE
 # =====================================================
-# --- Data Calculations for UI ---
+
 top_16_speed = df.nlargest(16, 'Speed')[['Name', 'Speed']].to_dict('records')
 
-# Calculate Avg Speed per Gen from the horse_db and data_registry
 gen_speeds = {}
+
 for name, data in data_registry.items():
+
     lvl = data['level']
     spd = float(horse_db[name].get('Speed', 0))
-    gen_speeds.setdefault(lvl, []).append(spd)
-avg_speed_gen = {lvl: round(sum(spds)/len(spds), 2) for lvl, spds in sorted(gen_speeds.items())}
 
-# Bloodline Distributions - RECALCULATED FROM INHERITED DNA
+    gen_speeds.setdefault(lvl, []).append(spd)
+
+avg_speed_gen = {
+    lvl: round(sum(spds)/len(spds), 2)
+    for lvl, spds in sorted(gen_speeds.items())
+}
+
+
 def calculate_global_genetics(include_dead=True):
+
     totals = {}
-    count = 0
+    count = 0  # redundant but kept per request
+
     for name, data in data_registry.items():
-        # Check if horse is alive if include_dead is False
+
         if not include_dead and horse_db[name].get("Status") == "Dead":
             continue
-        
+
         dna = data["dna"]
+
         for bloodline, percent in dna.items():
-            if bloodline != "Unknown": # Filter out Unknown from pie chart
+
+            if bloodline != "Unknown":
                 totals[bloodline] = totals.get(bloodline, 0) + percent
+
         count += 1
-    
-    # Normalize to 100%
+
     total_sum = sum(totals.values())
-    if total_sum == 0: return {}
-    return {k: round((v / total_sum) * 100, 1) for k, v in totals.items()}
+
+    if total_sum == 0:
+        return {}
+
+    return {
+        k: round((v / total_sum) * 100, 1)
+        for k, v in totals.items()
+    }
+
 
 blood_all = calculate_global_genetics(include_dead=True)
 blood_alive = calculate_global_genetics(include_dead=False)
 
-# JSON Exports for JS
-stats_json = json.dumps({"top_16": top_16_speed, "avg_speed": avg_speed_gen, "blood_all": blood_all, "blood_alive": blood_alive})
+stats_json = json.dumps({
+    "top_16": top_16_speed,
+    "avg_speed": avg_speed_gen,
+    "blood_all": blood_all,
+    "blood_alive": blood_alive
+})
+
 anc_json = json.dumps(ancestor_map)
 desc_json = json.dumps(final_desc_map)
-js_color_map = json.dumps(origin_colors) # Added color map for the pie charts
+js_color_map = json.dumps(origin_colors)
 
-html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
+html_content = fig.to_html(
+    include_plotlyjs='cdn',
+    config={'scrollZoom': True}
+)
 
 ui_html = f"""
 <style>
