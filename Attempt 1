@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from datetime import datetime
 import os
 
@@ -87,7 +86,7 @@ for name, data in data_registry.items():
     generation_groups.setdefault(data["level"], []).append(name)
 
 # =====================================================
-# 2. POSITIONING
+# 2. POSITIONING & AGGREGATION
 # =====================================================
 pos = {}
 for level, names in generation_groups.items():
@@ -111,14 +110,21 @@ for name in top_16:
 # =====================================================
 fig = go.Figure()
 
-# --- A. TREE VIEW TRACES ---
 tree_indices = []
 
-# Hybrid Curves Only (Straight traces removed)
+# --- A. TREE VIEW TRACES ---
 for name, row in horse_db.items():
     p1_n, p2_n = row["Parent1"], row["Parent2"]
     if p1_n in pos and p2_n in pos:
         p1, p2, child = pos[p1_n], pos[p2_n], pos[name]
+        
+        # 1. Light Gray Horizontal Parent Lines
+        fig.add_trace(go.Scatter(x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
+                                 line=dict(color="rgba(200,200,200,0.3)", width=1), 
+                                 hoverinfo='skip', showlegend=False))
+        tree_indices.append(len(fig.data)-1)
+
+        # 2. Hybrid Color Curves
         mid_x, mid_y = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
         t = np.linspace(0, 1, 15)
         curve_x = (1-t)**3 * mid_x + 3*(1-t)**2*t * mid_x + 3*(1-t)*t**2 * child[0] + t**3 * child[0]
@@ -129,7 +135,7 @@ for name, row in horse_db.items():
                                  opacity=0.4, hoverinfo='skip', showlegend=False))
         tree_indices.append(len(fig.data)-1)
 
-# Nodes & All Names
+# Nodes & Names
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
     is_dead = horse_db[name].get("Status") == "Dead"
@@ -144,33 +150,27 @@ for name, (x, y) in pos.items():
             line=dict(width=2, color=h_data["color"]),
             symbol="star" if name == god_horse else "circle"
         ),
-        hovertext=f"<b>{name.upper()}</b><br>Speed: {horse_db[name]['Speed']}<br>F: {h_data['f']*100:.1f}%",
+        hovertext=f"<b>{name.upper()}</b><br>Speed: {horse_db[name]['Speed']}",
         showlegend=False
     ))
     tree_indices.append(len(fig.data)-1)
 
-# --- B. LEGEND TRACES (Always part of Tree View) ---
+# --- B. LEGEND (TREE ONLY) ---
 legend_indices = []
 for blood, color in origin_colors.items():
-    fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', 
-                             marker=dict(color=color, size=10), name=blood))
+    fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color, size=10), name=blood))
     legend_indices.append(len(fig.data)-1)
-
-fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', 
-                         marker=dict(color='black', size=10, line=dict(color='white', width=1)), name='Deceased'))
+fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color='black', size=10, line=dict(color='white', width=1)), name='Deceased'))
 legend_indices.append(len(fig.data)-1)
 
-# --- C. DASHBOARD TRACES (HIDDEN) ---
+# --- C. DASHBOARD (HIDDEN IN TREE) ---
 dash_indices = []
-
-# DNA Pie
 pie_labels = list(aggregate_dna.keys())
 fig.add_trace(go.Pie(labels=pie_labels, values=[aggregate_dna[l] for l in pie_labels], 
                      marker=dict(colors=[origin_colors.get(l, "#444444") for l in pie_labels]),
                      domain={'x': [0, 0.45], 'y': [0.2, 0.8]}, visible=False))
 dash_indices.append(len(fig.data)-1)
 
-# Speed Trend
 gens = sorted(generation_groups.keys())
 avgs = [np.mean([float(horse_db[n]['Speed'] or 0) for n in generation_groups[g]]) for g in gens]
 fig.add_trace(go.Scatter(x=gens, y=avgs, mode='lines+markers', line=dict(color='gold', width=4), 
@@ -178,15 +178,12 @@ fig.add_trace(go.Scatter(x=gens, y=avgs, mode='lines+markers', line=dict(color='
 dash_indices.append(len(fig.data)-1)
 
 # =====================================================
-# 4. TOGGLE LOGIC & LAYOUT
+# 4. TOGGLE LOGIC & LAYOUT FIX
 # =====================================================
 total_traces = len(fig.data)
-
-# Tree View: Tree + Legend (No Dashboard)
 tree_visible = [False] * total_traces
 for i in tree_indices + legend_indices: tree_visible[i] = True
 
-# Dash View: Dashboard only (No Tree, No Legend)
 dash_visible = [False] * total_traces
 for i in dash_indices: dash_visible[i] = True
 
@@ -206,6 +203,7 @@ fig.update_layout(
     template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
     xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
     yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+    # Secondary axes for the dashboard trend chart
     xaxis2=dict(domain=[0.55, 0.95], anchor='y2', visible=False, title="Generation"),
     yaxis2=dict(domain=[0.2, 0.8], anchor='x2', visible=False, title="Avg Speed"),
     legend=dict(x=1, y=0.5, bgcolor="rgba(0,0,0,0.5)")
