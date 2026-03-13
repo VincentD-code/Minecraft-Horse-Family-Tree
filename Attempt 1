@@ -280,12 +280,11 @@ stats_json = json.dumps({
 
 anc_json, desc_json, js_color_map = json.dumps(ancestor_map), json.dumps(final_desc_map), json.dumps(origin_colors)
 
-# Generate the base Plotly HTML - This ensures the main tree is full screen
+# Generate the base Plotly HTML
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True, 'doubleClick': False})
 
 ui_html = f"""
 <style>
-    /* Binder UI Positioning */
     #binder-container {{
         position: fixed; top: 5%; right: -380px; width: 380px; height: 90vh;
         transition: 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 10000;
@@ -293,7 +292,6 @@ ui_html = f"""
     }}
     #binder-container.active {{ right: 0 !important; }}
 
-    /* Tab Stack */
     .tab-stack {{
         position: absolute; left: -60px; top: 40px;
         display: flex; flex-direction: column; gap: 10px;
@@ -307,7 +305,6 @@ ui_html = f"""
     .binder-tab:hover {{ background: #222; width: 65px; left: -5px; }}
     .binder-tab.active-tab {{ background: #121212; color: #FFD700; width: 70px; left: -10px; border-left: 4px solid #FFD700; z-index: 10001; }}
 
-    /* Binder Pages with Scrollers */
     .binder-page {{
         width: 100%; height: 100%; background: #121212; border: 1px solid #444;
         border-radius: 0 0 0 20px; box-shadow: -15px 15px 40px rgba(0,0,0,0.8);
@@ -318,14 +315,20 @@ ui_html = f"""
     
     .page-header {{ border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 20px; font-weight: bold; font-size: 18px; color: #FFD700; }}
     
-    /* Graph Scroll Container for Page 1 */
+    /* HORIZONTAL SCROLLER FOR TAB 2 */
     .graph-scroll-container {{
         width: 100%;
-        height: auto;
-        min-height: 500px; /* Trigger vertical scroll */
+        overflow-x: auto; /* Enable horizontal slider */
+        overflow-y: hidden;
+        background: #1a1a1a;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #333;
+    }}
+    #gen-performance-chart {{
+        height: 400px; /* Fixed height for the XY plot */
     }}
 
-    /* Table Styling */
     table {{ width: 100%; border-collapse: collapse; }}
     th {{ text-align: left; color: #888; font-size: 11px; padding-bottom: 10px; }}
     td {{ padding: 12px 8px; border-bottom: 1px solid #222; font-size: 13px; font-family: monospace; color: #fff; cursor: pointer; }}
@@ -344,7 +347,6 @@ ui_html = f"""
         border-radius:8px; cursor:pointer; user-select:none;
     }}
 
-    /* Pie Chart Specific Height - Added larger height for better scroll visibility */
     .pie-container {{ height: 350px; width: 100%; margin-bottom: 40px; }}
 </style>
 
@@ -368,6 +370,9 @@ ui_html = f"""
         <div class="page-header">PERFORMANCE BY GEN</div>
         <div class="graph-scroll-container">
             <div id="gen-performance-chart"></div>
+        </div>
+        <div style="font-size: 10px; color: #666; font-family: monospace; text-align: center;">
+            ← SLIDE TO VIEW LINEAGE PROGRESSION →
         </div>
         <div class="minimize-btn" onclick="toggleBinder()">[ MINIMIZE BINDER ]</div>
     </div>
@@ -408,7 +413,6 @@ function openTab(index) {{
     document.getElementById('page-' + index).classList.add('active-page');
     document.querySelectorAll('.binder-tab')[index].classList.add('active-tab');
     
-    // FIX: Force sub-charts to resize correctly when their tab is displayed
     setTimeout(() => {{
         window.dispatchEvent(new Event('resize'));
         if (index === 1) Plotly.Plots.resize('gen-performance-chart');
@@ -419,42 +423,55 @@ function openTab(index) {{
     }}, 50);
 }}
 
+// RENDER XY PLOT FOR TAB 2
 const renderGenChart = () => {{
     const gens = Object.keys(stats.avg_speed);
     const speeds = Object.values(stats.avg_speed);
     
-    const dynamicHeight = Math.max(500, gens.length * 45);
     const chartDiv = document.getElementById('gen-performance-chart');
-    if(chartDiv) chartDiv.style.height = dynamicHeight + "px";
+    // Set dynamic width based on gen count to ensure horizontal scrolling
+    const dynamicWidth = Math.max(350, gens.length * 65); 
+    if(chartDiv) chartDiv.style.width = dynamicWidth + "px";
 
     const data = [{{
-        x: speeds,
-        y: gens.map(g => "Gen " + g),
-        customdata: gens, 
-        type: 'bar',
-        orientation: 'h',
-        marker: {{
-            color: speeds,
-            colorscale: [[0, '#00F5FF'], [1, '#FFD700']],
-            line: {{ width: 1, color: '#121212' }}
+        x: gens,
+        y: speeds,
+        mode: 'lines+markers',
+        type: 'scatter',
+        marker: {{ 
+            size: 10, 
+            color: '#00F5FF',
+            line: {{ color: '#FFD700', width: 2 }}
         }},
-        hovertemplate: '<b>Gen %{{y}}</b><br>Avg Speed: %{{x}}<br>Click to Highlight Gen<extra></extra>',
+        line: {{ color: '#00F5FF', width: 3, shape: 'spline' }},
+        hovertemplate: '<b>Gen %{{x}}</b><br>Avg Speed: %{{y}}<extra></extra>',
     }}];
 
     const layout = {{
-        margin: {{ l: 70, r: 20, t: 10, b: 40 }},
+        margin: {{ l: 40, r: 40, t: 40, b: 60 }},
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
-        xaxis: {{ title: "Average Speed", gridcolor: '#333', font: {{ color: '#888', size: 10 }} }},
-        yaxis: {{ autorange: "reversed", gridcolor: 'transparent', font: {{ color: '#fff', size: 11 }} }},
+        xaxis: {{ 
+            title: "Generation", 
+            gridcolor: '#333', 
+            font: {{ color: '#888' }},
+            dtick: 1,
+            fixedrange: true 
+        }},
+        yaxis: {{ 
+            title: "Avg Speed", 
+            gridcolor: '#222', 
+            font: {{ color: '#888' }},
+            zeroline: false
+        }},
         hoverlabel: {{ bgcolor: '#111', font: {{ family: 'monospace', color: '#fff' }} }}
     }};
 
-    Plotly.newPlot('gen-performance-chart', data, layout, {{displayModeBar: false, responsive: true}});
+    Plotly.newPlot('gen-performance-chart', data, layout, {{displayModeBar: false}});
 
     chartDiv.on('plotly_click', function(data) {{
         if (!data || !data.points) return;
-        const selectedGen = data.points[0].customdata;
+        const selectedGen = data.points[0].x;
         const mainGraph = document.getElementsByClassName('plotly-graph-div')[0];
         const newOpacities = []; const newWidths = [];
 
@@ -471,7 +488,6 @@ const renderGenChart = () => {{
 window.addEventListener('load', function() {{
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 
-    // 1. POPULATE LEADERBOARD
     const t16Body = document.getElementById('top-16-body');
     stats.top_16.forEach((h, i) => {{
         let row = document.createElement('tr');
@@ -480,10 +496,8 @@ window.addEventListener('load', function() {{
         t16Body.appendChild(row);
     }});
 
-    // 2. TRIGGER GENERATION CHART
     renderGenChart();
 
-    // 3. POPULATE GENETIC PIE CHARTS
     const renderPie = (targetId, dataDict) => {{
         const labels = Object.keys(dataDict);
         const values = Object.values(dataDict);
@@ -556,10 +570,8 @@ window.addEventListener('load', function() {{
 </script>
 """
 
-# SURGICAL INJECTION: This keeps your graph full screen.
 final_output = html_content.replace('</body>', js_script + '</body>')
-
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(final_output)
 
-print("Export Complete: Main tree is full-screen. Binder tabs 2 and 3 now have scrollers and auto-rendering.")
+print("Process complete. 'index.html' updated with XY Plot and scrollers.")
