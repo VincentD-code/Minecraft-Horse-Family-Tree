@@ -228,13 +228,16 @@ window.addEventListener('load', function() {{
     function resetToDefault() {{
         var opacities = [];
         var widths = [];
-        for(var i=0; i<graphDiv.data.length; i++){{
+        for(var i=0; i < graphDiv.data.length; i++){{
             var trace = graphDiv.data[i];
             if (trace.name === "line_parent") opacities.push(0.30);
             else if (trace.name === "line_child") opacities.push(0.45);
             else if (trace.name === "glow") opacities.push(0.2);
             else opacities.push(1.0);
-            widths.push(trace.name === "line_child" ? 2.5 : (trace.name === "line_parent" ? 1.5 : null));
+            
+            if (trace.name === "line_child") widths.push(2.5);
+            else if (trace.name === "line_parent") widths.push(1.5);
+            else widths.push(null);
         }}
         Plotly.restyle(graphDiv, {{ 'opacity': opacities, 'line.width': widths }});
         currentHighlighted = null;
@@ -243,45 +246,48 @@ window.addEventListener('load', function() {{
     function highlightLogic(selectedHorse) {{
         var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
         var relatedSet = targetMap[selectedHorse] || [selectedHorse];
-        var update = {{ 'opacity': [], 'line.width': [] }};
+        
+        var newOpacities = [];
+        var newWidths = [];
 
-        for(var i=0; i<graphDiv.data.length; i++){{
+        for(var i=0; i < graphDiv.data.length; i++){{
             var trace = graphDiv.data[i];
+            // Extract horse name from customdata (handles both strings and objects)
             var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
-            var isRelated = false;
-            var traceHorseName = (typeof rawData === 'object' && rawData !== null) ? rawData.child : rawData;
+            var traceHorseName = (rawData && typeof rawData === 'object') ? rawData.child : rawData;
 
+            var isRelated = false;
             if (trace.name === "node" || trace.name === "glow") {{
-                isRelated = (traceHorseName && relatedSet.includes(traceHorseName));
-            }} 
-            else if (trace.name.includes("line")) {{
-                if (currentMode === 'ancestors') {{
-                    isRelated = relatedSet.includes(traceHorseName);
-                }} else {{
-                    isRelated = relatedSet.includes(traceHorseName) && traceHorseName !== selectedHorse;
-                }}
+                isRelated = relatedSet.includes(traceHorseName);
+            }} else if (trace.name.includes("line")) {{
+                // For lines, customdata is the child name. 
+                // In ancestor mode, we highlight lines leading to ancestors.
+                // In descendant mode, we highlight lines leading to descendants.
+                isRelated = relatedSet.includes(traceHorseName) && (traceHorseName !== selectedHorse || currentMode === 'ancestors');
             }}
 
             if (isRelated) {{
-                update.opacity.push(1.0);
-                update['line.width'].push(trace.name.includes("line") ? 5.5 : null);
+                newOpacities.push(1.0);
+                newWidths.push(trace.name.includes("line") ? 5.0 : null);
             }} else {{
-                update.opacity.push(0.015);
-                update['line.width'].push(trace.name.includes("line") ? 0.2 : null);
+                newOpacities.push(0.05);
+                newWidths.push(trace.name.includes("line") ? 0.1 : null);
             }}
         }}
-        Plotly.restyle(graphDiv, update);
+        Plotly.restyle(graphDiv, {{ 'opacity': newOpacities, 'line.width': newWidths }});
     }}
 
     graphDiv.on('plotly_click', function(data){{
-        if (!data || !data.points || data.points.length === 0) {{
-            resetToDefault();
-            return;
-        }}
-        var rawPointData = data.points[0].customdata;
-        var selectedHorse = (typeof rawPointData === 'object' && rawPointData !== null && rawPointData.child) 
-                            ? rawPointData.child 
+        if (!data || !data.points) return;
+        
+        var pt = data.points[0];
+        var rawPointData = pt.customdata;
+        // Logic to extract name from complex Plotly customdata structures
+        var selectedHorse = (rawPointData && typeof rawPointData === 'object') 
+                            ? (rawPointData.child || rawPointData[0]) 
                             : (Array.isArray(rawPointData) ? rawPointData[0] : rawPointData);
+
+        if (!selectedHorse) return;
 
         if (currentHighlighted === selectedHorse) {{
             resetToDefault();
@@ -291,6 +297,7 @@ window.addEventListener('load', function() {{
         }}
     }});
 
+    // Double click or clicking background resets
     graphDiv.on('plotly_doubleclick', resetToDefault);
     graphDiv.addEventListener('mousedown', function(e) {{
         if (e.target.classList.contains('nsewdrag')) resetToDefault();
