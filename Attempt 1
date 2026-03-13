@@ -46,13 +46,14 @@ def mix_rgb_colors(dna_weights):
 data_registry = {}
 ancestor_map = {}
 
+# REVERTED: Reliable recursive ancestor finding logic
 def get_ancestor_list(name):
     if not name or name not in horse_db: return []
-    p1 = horse_db[name].get("Parent1")
-    p2 = horse_db[name].get("Parent2")
+    p1 = horse_db[name].get("Parent1", "")
+    p2 = horse_db[name].get("Parent2", "")
     ancestors = [name]
-    if p1: ancestors.extend(get_ancestor_list(p1))
-    if p2: ancestors.extend(get_ancestor_list(p2))
+    if p1 != "": ancestors.extend(get_ancestor_list(p1))
+    if p2 != "": ancestors.extend(get_ancestor_list(p2))
     return list(set(ancestors))
 
 def process_horse(name, depth=0):
@@ -100,19 +101,17 @@ for level, names in generation_groups.items():
 # =====================================================
 fig = go.Figure()
 
-# --- 1. PARENT LINES ---
 for name, row in horse_db.items():
     p1_n, p2_n = row["Parent1"], row["Parent2"]
     if p1_n in pos and p2_n in pos:
         p1, p2 = pos[p1_n], pos[p2_n]
         fig.add_trace(go.Scatter(
             x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
-            line=dict(color="rgba(180,180,180,0.25)", width=1.5), # 0.25 Opacity
+            line=dict(color="rgba(180,180,180,0.25)", width=1.5),
             hoverinfo='skip', showlegend=False,
             customdata=[name], name="line_parent"
         ))
 
-# --- 2. CHILD CURVES ---
 for name, row in horse_db.items():
     p1_n, p2_n = row["Parent1"], row["Parent2"]
     if p1_n in pos and p2_n in pos:
@@ -128,7 +127,6 @@ for name, row in horse_db.items():
             customdata=[name], name="line_child"
         ))
 
-# --- 3. NODES ---
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
     row = horse_db[name]
@@ -142,12 +140,7 @@ for name, (x, y) in pos.items():
     dna_sorted = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
     dna_str = "<br>".join([f"  • {k}: {v*100:.1f}%" for k, v in dna_sorted if v > 0])
     p1, p2 = row.get("Parent1"), row.get("Parent2")
-    
-    if p1 and p2:
-        s1, s2 = horse_db[p1].get("Speed", "??"), horse_db[p2].get("Speed", "??")
-        parent_info = f"Parents: {p1} ({s1}) & {p2} ({s2})<br>Breeding Roll: {h_data['mutation']:.2f}"
-    else:
-        parent_info = "Foundation Horse"
+    parent_info = f"Parents: {p1} & {p2}<br>Roll: {h_data['mutation']:.2f}" if p1 else "Foundation"
 
     hover_label = f"<b>{display_name}</b><br>Speed: {row['Speed']}<br>{parent_info}<br><b>DNA:</b><br>{dna_str}"
 
@@ -175,7 +168,7 @@ fig.update_layout(
 )
 
 # =====================================================
-# 4. JAVASCRIPT INJECTION (REFINED TOGGLE/OUTSIDE CLICK)
+# 4. JAVASCRIPT INJECTION (TOGGLE & SWITCH LOGIC)
 # =====================================================
 anc_json = json.dumps(ancestor_map)
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
@@ -202,20 +195,21 @@ function resetToDefault() {{
 }}
 
 graphDiv.on('plotly_click', function(data){{
-    // Check if we clicked on an actual node
-    if (!data.points || !data.points[0].customdata) {{
+    // 1. If we clicked on empty space, data.points will be empty/undefined depending on clickmode
+    if (!data.points || data.points.length === 0 || !data.points[0].customdata) {{
         resetToDefault();
         return;
     }}
 
-    var selectedHorse = data.points[0].customdata;
-    
-    // Toggle off if same horse is clicked
+    var selectedHorse = data.points[0].customdata[0];
+
+    // 2. Toggle off if clicking the exact same horse node
     if (currentHighlighted === selectedHorse) {{
         resetToDefault();
         return;
     }}
 
+    // 3. Highlight ancestors for the new selection
     var ancestors = ancestorMap[selectedHorse] || [];
     currentHighlighted = selectedHorse;
     
@@ -239,19 +233,17 @@ graphDiv.on('plotly_click', function(data){{
     Plotly.restyle(graphDiv, update);
 }});
 
-// Catch-all click for the graph background
-graphDiv.addEventListener('click', function(e) {{
-    // If the click target is the background canvas or the container, reset.
-    if (e.target.classList.contains('nsewdrag') || e.target.classList.contains('plotly-graph-div')) {{
+// Force background click to reset
+graphDiv.addEventListener('mousedown', function(e) {{
+    if (e.target.classList.contains('nsewdrag')) {{
         resetToDefault();
     }}
-}}, true);
+}});
 
-graphDiv.on('plotly_doubleclick', resetToDefault);
 </script>
 """
 
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
 
-print("Ancestor logic reviewed: Parent opacity set to 0.25. Click-to-reset (node or background) is live.")
+print("Logic fixed: Reverted ancestor search, set parent opacity to 0.25, and enabled click-to-switch/toggle.")
