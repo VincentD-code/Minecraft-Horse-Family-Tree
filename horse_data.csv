@@ -1,17 +1,17 @@
 Name,Parent1,Parent2,Status,OriginBlood,Generation,Speed,Jump,Health,Appearance
 Speedy,,,Alive,Star Strider,,12.06,,,
 Blondy,,,Dead,Celestial Grass,,11.88,,,
-Whitty I,,,Dead,Thunder Blood,,11.01,,,
-Spotty,,,Dead,Thunder Blood,,11.01,,,
-Camemille,,,Dead,Frostmane,,10.85,,,
-White V,,,Dead,Frostmane,,10.52,,,
-Pure,,,Dead,Emberhoof,,10.44,,,
-Scorchback,,,Dead,Emberhoof,,10.24,,,
-Snail,,,Dead,Slothsoul,,5.64,,,
-Gray,,,Dead,Slothsoul,,7.80,,,
-Whitty II,Spotty,Whitty I,Dead,MIXED_SPECIAL,,11.63,,,
+Whitty I,,,Dead,Thunder Blood,,11.01,,,White w/ White Spots
+Spotty,,,Dead,Thunder Blood,,11.01,,,Creamy w/ White Spots
+Camemille,,,Dead,Frostmane,,10.85,,,Creamy w/ None
+White V,,,Dead,Frostmane,,10.52,,,White w/ White Patches
+Pure,,,Dead,Emberhoof,,10.44,,,Chestnut w/None
+Scorchback,,,Dead,Emberhoof,,10.24,,,Chestnut w/ Black Sooty
+Snail,,,Dead,Slothsoul,,5.64,,,Gray w/ White Patches
+Gray,,,Dead,Slothsoul,,7.80,,,Gray w/ None
+Whitty II,Spotty,Whitty I,Dead,MIXED_SPECIAL,,11.63,,,White w/ White Patches
 Cruiser,Speedy,Blondy,Alive,,,11.95,,,
-Stripe,Pure,Scorchback,Dead,,,11.06,,,
+Stripe,Pure,Scorchback,Dead,,,11.06,,,Chestnut w/ White Stockings/Blaze
 Blackback,Snail,Gray,Dead,,,5.61,,,
 White Face,Camemille,White V,Dead,,,9.86,,,
 Scorchback II,Blondy,Whitty II,Dead,,,11.78,,,
@@ -22,7 +22,7 @@ Pure Spots,White V,Pure,Dead,,,10.28,,,
 White VI,White V,Pure,Dead,,,10.11,,,
 Gray II,Snail,Blackback,Dead,,,5.54,,,
 White VII,Pure,White V,Dead,,,10.02,,,
-Camspot II,Camemille,Spotty II,Dead,,,10.28,2.88,11.10,Creamy w/ Rusty Spots
+Camspot II,Camemille,Spotty II,Dead,,,10.28,2.88,22.20,Creamy w/ Rusty Spots
 White VIII,Spotty,Whitty I,Dead,,,11.34,,,
 Camemille II,Stripe,Camspot,Dead,,,11.32,,,
 White IX,Speedy II,Whitty II,Dead,,,10.37,,,
@@ -40,7 +40,7 @@ Mirage II,Whitty II,Scorchback II,Alive,,,12.18,,,
 Blondy II,Blondy,Spooky,Dead,,,11.50,,,
 Cruiser II,Cruiser,Speedy,Alive,,,12.58,,,
 Gray III,Gray II,Blackback,Alive,,,4.97,,,
-Camemille IV,Spotty II ,Camemille,Dead,,,10.52,3.60,11.20,Creamy w/ None
+Camemille IV,Spotty II ,Camemille,Dead,,,10.52,3.60,22.40,Creamy w/ None
 Camemille V,Spotty II ,Camemille,Dead,,,11.37,,,
 Camemille VI,Speedy II,Camemille II,Dead,,,10.98,,,
 Camspot IV,White VIII,Camemille V,Dead,,,11.94,,,
@@ -60,9 +60,9 @@ Speedy III,Speedy,Shadow,Alive,,,11.98,,,
 White Socks II,Mirage II,White Socks I,Alive,,,12.78,,,
 Brownspot I,Brownscorch,Cruiser II,Alive,,,12.50,,,
 Gray V,Gray II,Gray III,Alive,,,5.03,,,
-Blondy V,Blondy,Light,Dead,,,11.46,2.29,13.5,Chestnut w/ White Patches
+Blondy V,Blondy,Light,Dead,,,11.46,2.29,27,Chestnut w/ White Patches
 Spooky II,Spooky,Camspot IV,Dead,,,11.51,,,
-Spooky III,Cruiser,Speedy III,Alive,,,12.51,3.84,12.5,Black w/ White Patches
+Spooky III,Cruiser,Speedy III,Alive,,,12.51,3.84,25,Black w/ White Patches
 Speedy IV,Stripe II,Speedy,Dead,,,11.84,,,
 Grayspot I,Shadow,Camspot V,Dead,,,11.41,,,
 Light II,Mirage II,White Socks I,Alive,,,12.22,,,
