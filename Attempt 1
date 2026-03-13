@@ -425,7 +425,10 @@ js_color_map = json.dumps(origin_colors)
 
 html_content = fig.to_html(
     include_plotlyjs='cdn',
-    config={'scrollZoom': True}
+    config={
+        'scrollZoom': True,
+        'doubleClick': False
+    }
 )
 
 ui_html = f"""
@@ -663,7 +666,6 @@ window.addEventListener('load', function() {{
         if (currentHighlighted === name) resetToDefault();
         else {{ currentHighlighted = name; highlightLogic(name); }}
     }});
-    graphDiv.on('plotly_doubleclick', resetToDefault);
     graphDiv.addEventListener('mousedown', (e) => {{ if(e.target.classList.contains('nsewdrag')) resetToDefault(); }});
 }});
 </script>
