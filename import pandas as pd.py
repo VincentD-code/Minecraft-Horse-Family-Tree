@@ -29,6 +29,9 @@ origin_colors = {
     "Unknown": "#444444"
 }
 
+# Identify the fastest horse for the "God Horse" glow effect
+fastest_horse_name = df.loc[pd.to_numeric(df['Speed']).idxmax(), 'Name']
+
 def mix_rgb_colors(dna_weights):
     if not dna_weights: return "#444444"
     r, g, b = 0, 0, 0
@@ -61,7 +64,7 @@ def process_horse(name, depth=0):
         color = mix_rgb_colors(dna)
         level = max(res1["level"], res2["level"]) + 1
         
-        # Reverse Breeding Formula: Random Value = (3 * ChildSpeed) - Parent1Speed - Parent2Speed
+        # Mutation = (3 * ChildSpeed) - Parent1Speed - Parent2Speed
         s1 = float(horse_db[p1].get("Speed") or 0)
         s2 = float(horse_db[p2].get("Speed") or 0)
         mutation = (3 * current_speed) - s1 - s2
@@ -90,27 +93,54 @@ for level, names in generation_groups.items():
 # =====================================================
 fig = go.Figure()
 
+# --- CONNECTIONS (LINES) ---
 for name, row in horse_db.items():
     p1_n, p2_n = row["Parent1"], row["Parent2"]
     if p1_n in pos and p2_n in pos:
         p1, p2, child = pos[p1_n], pos[p2_n], pos[name]
+        
+        # 1. LIGHT GRAY PARENT-TO-PARENT LINE (Essential)
+        fig.add_trace(go.Scatter(
+            x=[p1[0], p2[0]], y=[p1[1], p2[1]], 
+            mode='lines', 
+            line=dict(color="rgba(180,180,180,0.4)", width=1.5), 
+            hoverinfo='skip', showlegend=False
+        ))
+
+        # 2. COLORED CURVES TO CHILD
         mid_x, mid_y = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
         t = np.linspace(0, 1, 15)
         curve_x = (1-t)**3 * mid_x + 3*(1-t)**2*t * mid_x + 3*(1-t)*t**2 * child[0] + t**3 * child[0]
         curve_y = (1-t)**3 * mid_y + 3*(1-t)**2*t * (mid_y - 4) + 3*(1-t)*t**2 * (child[1] + 4) + t**3 * child[1]
-        fig.add_trace(go.Scatter(x=curve_x, y=curve_y, mode='lines', 
-                                 line=dict(color=data_registry[name]["color"], width=2), opacity=0.3, hoverinfo='skip', showlegend=False))
+        fig.add_trace(go.Scatter(
+            x=curve_x, y=curve_y, 
+            mode='lines', 
+            line=dict(color=data_registry[name]["color"], width=2), 
+            opacity=0.3, hoverinfo='skip', showlegend=False
+        ))
 
+# --- NODES ---
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
     row = horse_db[name]
     is_dead = row.get("Status") == "Dead"
+    is_god = (name == fastest_horse_name)
     
-    # Format DNA string
+    display_name = f"★ GOD HORSE: {name.upper()} ★" if is_god else name.upper()
+    node_size = 22 if is_god else 14
+    text_color = "#FFD700" if is_god else "rgba(255,255,255,0.8)"
+
+    # Glow Effect for God Horse
+    if is_god:
+        fig.add_trace(go.Scatter(
+            x=[x], y=[y], mode='markers',
+            marker=dict(size=node_size+18, color=h_data["color"], opacity=0.25),
+            hoverinfo='skip', showlegend=False
+        ))
+
+    # DNA & Parent Tooltips
     dna_sorted = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
     dna_str = "<br>".join([f"  • {k}: {v*100:.1f}%" for k, v in dna_sorted if v > 0])
-    
-    # Parent Info
     p1, p2 = row.get("Parent1"), row.get("Parent2")
     parent_info = "Foundation Horse"
     if p1 and p2:
@@ -118,7 +148,7 @@ for name, (x, y) in pos.items():
         parent_info = f"Parents: {p1} ({s1}) & {p2} ({s2})<br>Breeding Roll: {h_data['mutation']:.2f}"
 
     hover_label = (
-        f"<b>{name.upper()}</b><br>"
+        f"<b>{display_name}</b><br>"
         f"Speed: {row['Speed']}<br>"
         f"{parent_info}<br>"
         f"<b>Bloodline Density:</b><br>{dna_str}"
@@ -126,13 +156,19 @@ for name, (x, y) in pos.items():
 
     fig.add_trace(go.Scatter(
         x=[x], y=[y], mode='markers+text',
-        text=[name.upper()],
-        textposition="bottom center", textfont=dict(size=9, color="white"),
-        marker=dict(size=14, color='black' if is_dead else h_data["color"],
-                    line=dict(width=2, color=h_data["color"])),
+        text=[display_name],
+        textposition="bottom center", 
+        textfont=dict(size=10 if is_god else 8, color=text_color),
+        marker=dict(
+            size=node_size, 
+            color='black' if is_dead else h_data["color"],
+            line=dict(width=3 if is_god else 1.5, color="#FFD700" if is_god else "rgba(255,255,255,0.3)"),
+            symbol="star" if is_god else "circle"
+        ),
         hovertext=hover_label, hoverinfo="text", showlegend=False
     ))
 
+# --- LEGEND ---
 for blood, color in origin_colors.items():
     fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color, size=10), name=blood))
 
@@ -140,7 +176,7 @@ for blood, color in origin_colors.items():
 # 4. LAYOUT
 # =====================================================
 fig.update_layout(
-    title="Pedigree Map: DNA Density & Breeding Analysis",
+    title=f"Horse Pedigree Tree | Fastest: {fastest_horse_name}",
     template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
     xaxis=dict(visible=False), yaxis=dict(visible=False),
     showlegend=True, margin=dict(t=80, b=50, l=50, r=50),
@@ -148,4 +184,4 @@ fig.update_layout(
 )
 
 fig.write_html("index.html", config={'scrollZoom': True})
-print("Build Successful. Open 'index.html' to see DNA and Mutation stats.")
+print(f"Build Successful. Horizontal parent lines restored. God Horse: {fastest_horse_name}.")
