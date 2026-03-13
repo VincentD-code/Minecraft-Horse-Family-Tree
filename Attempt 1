@@ -454,7 +454,7 @@ ui_html = f"""
 <style>
     /* Binder UI Positioning */
     #binder-container {{
-        position: fixed; top: 5%; right: -380px; width: 380px; height: 85vh;
+        position: fixed; top: 5%; right: -380px; width: 380px; height: 90vh;
         transition: 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 10000;
         font-family: 'Segoe UI', Tahoma, sans-serif;
     }}
@@ -479,12 +479,20 @@ ui_html = f"""
     .binder-page {{
         width: 100%; height: 100%; background: #121212; border: 1px solid #444;
         border-radius: 0 0 0 20px; box-shadow: -15px 15px 40px rgba(0,0,0,0.8);
-        padding: 25px; display: none; overflow-y: auto; color: #ffffff;
+        padding: 25px; display: none; overflow-y: auto; overflow-x: hidden; color: #ffffff;
+        box-sizing: border-box;
     }}
     .binder-page.active-page {{ display: block; }}
     
     .page-header {{ border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 20px; font-weight: bold; font-size: 18px; color: #FFD700; }}
     
+    /* NEW: Graph Scroll Container for Page 1 */
+    .graph-scroll-container {{
+        width: 100%;
+        height: auto;
+        min-height: 400px;
+    }}
+
     /* Stats Containers */
     .stat-section {{ margin-bottom: 20px; padding: 12px; background: #1e1e1e; border-radius: 8px; border-left: 3px solid #00F5FF; }}
     .stat-label {{ font-size: 12px; display: flex; justify-content: space-between; margin-bottom: 8px; color: #eee; font-family: monospace; }}
@@ -535,7 +543,9 @@ ui_html = f"""
 
     <div id="page-1" class="binder-page">
         <div class="page-header">PERFORMANCE BY GEN</div>
-        <div id="gen-stats-container"></div>
+        <div class="graph-scroll-container">
+            <div id="gen-performance-chart"></div>
+        </div>
         <div class="minimize-btn" onclick="toggleBinder()">[ MINIMIZE BINDER ]</div>
     </div>
 
@@ -579,6 +589,51 @@ function openTab(index) {{
     window.dispatchEvent(new Event('resize'));
 }}
 
+// 2. POPULATE GENERATION ANALYTICS (AS A GRAPH)
+const renderGenChart = () => {{
+    const gens = Object.keys(stats.avg_speed);
+    const speeds = Object.values(stats.avg_speed);
+    
+    // Dynamically scale height: 45px per generation so it's always readable
+    const dynamicHeight = Math.max(400, gens.length * 45);
+    const chartDiv = document.getElementById('gen-performance-chart');
+    if(chartDiv) chartDiv.style.height = dynamicHeight + "px";
+
+    const data = [{{
+        x: speeds,
+        y: gens.map(g => "Gen " + g),
+        type: 'bar',
+        orientation: 'h',
+        marker: {{
+            color: speeds,
+            colorscale: [[0, '#00F5FF'], [1, '#FFD700']], // Transitions from Cyan to Gold
+            line: {{ width: 1, color: '#121212' }}
+        }},
+        hovertemplate: '<b>Gen %{{y}}</b><br>Avg Speed: %{{x}}<extra></extra>',
+    }}];
+
+    const layout = {{
+        padding: {{ l: 0, r: 0, t: 0, b: 0 }},
+        margin: {{ l: 60, r: 20, t: 10, b: 40 }},
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        xaxis: {{
+            title: "Average Speed",
+            gridcolor: '#333',
+            font: {{ color: '#888', size: 10 }},
+            zeroline: false
+        }},
+        yaxis: {{
+            autorange: "reversed", // Gen 0 at the top
+            gridcolor: 'transparent',
+            font: {{ color: '#fff', size: 11 }}
+        }},
+        hoverlabel: {{ bgcolor: '#111', font: {{ family: 'monospace', color: '#fff' }} }}
+    }};
+
+    Plotly.newPlot('gen-performance-chart', data, layout, {{displayModeBar: false, responsive: true}});
+}};
+
 window.addEventListener('load', function() {{
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 
@@ -594,16 +649,8 @@ window.addEventListener('load', function() {{
         t16Body.appendChild(row);
     }});
 
-    // 2. POPULATE GENERATION ANALYTICS
-    const genCont = document.getElementById('gen-stats-container');
-    const maxSpd = Math.max(...Object.values(stats.avg_speed));
-    Object.entries(stats.avg_speed).forEach(([gen, spd]) => {{
-        let barWidth = (spd / maxSpd) * 100;
-        genCont.innerHTML += `<div class="stat-section">
-            <div class="stat-label"><span>GEN ${{gen}}</span><span>${{spd}}</span></div>
-            <div class="bar-bg"><div class="bar-fill" style="width:${{barWidth}}%"></div></div>
-        </div>`;
-    }});
+    // 2. TRIGGER GENERATION CHART
+    renderGenChart();
 
     // 3. POPULATE GENETIC PIE CHARTS
     const renderPie = (targetId, dataDict) => {{
