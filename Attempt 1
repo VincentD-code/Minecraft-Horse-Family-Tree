@@ -205,9 +205,28 @@ for name, data in data_registry.items():
     gen_speeds.setdefault(lvl, []).append(spd)
 avg_speed_gen = {lvl: round(sum(spds)/len(spds), 2) for lvl, spds in sorted(gen_speeds.items())}
 
-# Bloodline Distributions
-blood_all = df['OriginBlood'].value_counts(normalize=True).mul(100).round(1).to_dict()
-blood_alive = df[df['Status'] != 'Dead']['OriginBlood'].value_counts(normalize=True).mul(100).round(1).to_dict()
+# Bloodline Distributions - RECALCULATED FROM INHERITED DNA
+def calculate_global_genetics(include_dead=True):
+    totals = {}
+    count = 0
+    for name, data in data_registry.items():
+        # Check if horse is alive if include_dead is False
+        if not include_dead and horse_db[name].get("Status") == "Dead":
+            continue
+        
+        dna = data["dna"]
+        for bloodline, percent in dna.items():
+            if bloodline != "Unknown": # Filter out Unknown from pie chart
+                totals[bloodline] = totals.get(bloodline, 0) + percent
+        count += 1
+    
+    # Normalize to 100%
+    total_sum = sum(totals.values())
+    if total_sum == 0: return {}
+    return {k: round((v / total_sum) * 100, 1) for k, v in totals.items()}
+
+blood_all = calculate_global_genetics(include_dead=True)
+blood_alive = calculate_global_genetics(include_dead=False)
 
 # JSON Exports for JS
 stats_json = json.dumps({"top_16": top_16_speed, "avg_speed": avg_speed_gen, "blood_all": blood_all, "blood_alive": blood_alive})
