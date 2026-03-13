@@ -190,11 +190,47 @@ fig.update_layout(
 )
 
 # =====================================================
-# 4. FULLY RESTORED & FIXED JS
+# 4. BLOODLINE AGGREGATE (PIE CHART)
+# =====================================================
+total_dna_stats = {k: 0.0 for k in origin_colors.keys()}
+for horse in data_registry.values():
+    for bloodline, percent in horse["dna"].items():
+        total_dna_stats[bloodline] = total_dna_stats.get(bloodline, 0) + percent
+
+# Prepare data for Pie Chart
+pie_labels, pie_values, pie_colors = [], [], []
+for blood, val in total_dna_stats.items():
+    if val > 0:
+        pie_labels.append(blood)
+        pie_values.append(val)
+        pie_colors.append(origin_colors.get(blood, "#444444"))
+
+fig_pie = go.Figure(data=[go.Pie(
+    labels=pie_labels, 
+    values=pie_values,
+    marker=dict(colors=pie_colors, line=dict(color='#050505', width=2)),
+    hole=.4,
+    textinfo='percent+label'
+)])
+
+fig_pie.update_layout(
+    title=dict(text="GLOBAL BLOODLINE DISTRIBUTION", font=dict(color="white", family="monospace")),
+    template="plotly_dark",
+    paper_bgcolor='#050505',
+    plot_bgcolor='#050505',
+    showlegend=True,
+    margin=dict(t=50, b=20, l=20, r=20)
+)
+
+# Generate HTML Components
+tree_html = fig.to_html(full_html=False, include_plotlyjs='cdn', config={'scrollZoom': True})
+pie_html = fig_pie.to_html(full_html=False, include_plotlyjs=False)
+
+# =====================================================
+# 5. INTEGRATED UI & JAVASCRIPT
 # =====================================================
 anc_json = json.dumps(ancestor_map)
 desc_json = json.dumps(final_desc_map)
-html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
 
 ui_html = """
 <div id="mode-ui" style="position:fixed; top:20px; left:20px; z-index:9999; background:rgba(20,20,20,0.95); padding:15px; border:1px solid #444; color:white; font-family:monospace; border-radius:8px; cursor:pointer; user-select:none; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
@@ -212,7 +248,9 @@ var currentMode = 'ancestors';
 var currentHighlighted = null;
 
 window.addEventListener('load', function() {{
-    var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
+    // Target the first graph (Tree) for interactive logic
+    var allGraphs = document.getElementsByClassName('plotly-graph-div');
+    var treeGraph = allGraphs[0];
 
     function toggleMode() {{
         currentMode = (currentMode === 'ancestors') ? 'descendants' : 'ancestors';
@@ -228,31 +266,25 @@ window.addEventListener('load', function() {{
     function resetToDefault() {{
         var opacities = [];
         var widths = [];
-        for(var i=0; i < graphDiv.data.length; i++){{
-            var trace = graphDiv.data[i];
+        for(var i=0; i < treeGraph.data.length; i++){{
+            var trace = treeGraph.data[i];
             if (trace.name === "line_parent") opacities.push(0.30);
             else if (trace.name === "line_child") opacities.push(0.45);
             else if (trace.name === "glow") opacities.push(0.2);
             else opacities.push(1.0);
-            
-            if (trace.name === "line_child") widths.push(2.5);
-            else if (trace.name === "line_parent") widths.push(1.5);
-            else widths.push(null);
+            widths.push(trace.name === "line_child" ? 2.5 : (trace.name === "line_parent" ? 1.5 : null));
         }}
-        Plotly.restyle(graphDiv, {{ 'opacity': opacities, 'line.width': widths }});
+        Plotly.restyle(treeGraph, {{ 'opacity': opacities, 'line.width': widths }});
         currentHighlighted = null;
     }}
 
     function highlightLogic(selectedHorse) {{
         var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
         var relatedSet = targetMap[selectedHorse] || [selectedHorse];
-        
-        var newOpacities = [];
-        var newWidths = [];
+        var update = {{ 'opacity': [], 'line.width': [] }};
 
-        for(var i=0; i < graphDiv.data.length; i++){{
-            var trace = graphDiv.data[i];
-            // Extract horse name from customdata (handles both strings and objects)
+        for(var i=0; i < treeGraph.data.length; i++){{
+            var trace = treeGraph.data[i];
             var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
             var traceHorseName = (rawData && typeof rawData === 'object') ? rawData.child : rawData;
 
@@ -260,53 +292,55 @@ window.addEventListener('load', function() {{
             if (trace.name === "node" || trace.name === "glow") {{
                 isRelated = relatedSet.includes(traceHorseName);
             }} else if (trace.name.includes("line")) {{
-                // For lines, customdata is the child name. 
-                // In ancestor mode, we highlight lines leading to ancestors.
-                // In descendant mode, we highlight lines leading to descendants.
                 isRelated = relatedSet.includes(traceHorseName) && (traceHorseName !== selectedHorse || currentMode === 'ancestors');
             }}
 
-            if (isRelated) {{
-                newOpacities.push(1.0);
-                newWidths.push(trace.name.includes("line") ? 5.0 : null);
-            }} else {{
-                newOpacities.push(0.05);
-                newWidths.push(trace.name.includes("line") ? 0.1 : null);
-            }}
+            update.opacity.push(isRelated ? 1.0 : 0.02);
+            update['line.width'].push(isRelated && trace.name.includes("line") ? 5.0 : (trace.name.includes("line") ? 0.5 : null));
         }}
-        Plotly.restyle(graphDiv, {{ 'opacity': newOpacities, 'line.width': newWidths }});
+        Plotly.restyle(treeGraph, update);
     }}
 
-    graphDiv.on('plotly_click', function(data){{
+    treeGraph.on('plotly_click', function(data){{
         if (!data || !data.points) return;
+        var rawPointData = data.points[0].customdata;
+        var selectedHorse = (rawPointData && typeof rawPointData === 'object') ? (rawPointData.child || rawPointData[0]) : rawPointData;
         
-        var pt = data.points[0];
-        var rawPointData = pt.customdata;
-        // Logic to extract name from complex Plotly customdata structures
-        var selectedHorse = (rawPointData && typeof rawPointData === 'object') 
-                            ? (rawPointData.child || rawPointData[0]) 
-                            : (Array.isArray(rawPointData) ? rawPointData[0] : rawPointData);
-
-        if (!selectedHorse) return;
-
-        if (currentHighlighted === selectedHorse) {{
-            resetToDefault();
-        }} else {{
-            currentHighlighted = selectedHorse;
-            highlightLogic(selectedHorse);
-        }}
+        if (currentHighlighted === selectedHorse) resetToDefault();
+        else {{ currentHighlighted = selectedHorse; highlightLogic(selectedHorse); }}
     }});
 
-    // Double click or clicking background resets
-    graphDiv.on('plotly_doubleclick', resetToDefault);
-    graphDiv.addEventListener('mousedown', function(e) {{
-        if (e.target.classList.contains('nsewdrag')) resetToDefault();
-    }});
+    treeGraph.on('plotly_doubleclick', resetToDefault);
 }});
 </script>
 """
 
-with open("index.html", "w", encoding="utf-8") as f:
-    f.write(html_content.replace('</body>', js_script + '</body>'))
+# =====================================================
+# 6. FINAL FILE WRITE
+# =====================================================
+full_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Horse Pedigree & Genetics</title>
+    <style>
+        body {{ background-color: #050505; color: white; margin: 0; overflow-x: hidden; font-family: monospace; }}
+        .container {{ display: flex; flex-direction: column; height: 100vh; }}
+        .tree-section {{ flex: 7; border-bottom: 2px solid #222; }}
+        .pie-section {{ flex: 3; min-height: 300px; padding: 20px; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tree-section">{tree_html}</div>
+        <div class="pie-section">{pie_html}</div>
+    </div>
+    {js_script}
+</body>
+</html>
+"""
 
-print("Full build complete. All UI elements restored and logic fixed.")
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(full_html)
+
+print("Build successful. Highlighting fixed and Pie Chart added.")
