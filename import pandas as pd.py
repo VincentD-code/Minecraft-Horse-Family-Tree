@@ -33,9 +33,8 @@ def mix_rgb_colors(dna_weights):
     if not dna_weights: return "#444444"
     r, g, b = 0, 0, 0
     for bloodline, percentage in dna_weights.items():
-        hex_c = origin_colors.get(bloodline, "#444444")
-        h = hex_c.lstrip('#')
-        rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+        hex_c = origin_colors.get(bloodline, "#444444").lstrip('#')
+        rgb = tuple(int(hex_c[i:i+2], 16) for i in (0, 2, 4))
         r += (rgb[0] / 255) * percentage
         g += (rgb[1] / 255) * percentage
         b += (rgb[2] / 255) * percentage
@@ -82,7 +81,7 @@ def process_horse(name, depth=0):
 for name in horse_db: process_horse(name)
 
 # =====================================================
-# 2. POSITIONING & TOP 16 STATS
+# 2. POSITIONING & STATS PREP
 # =====================================================
 generation_groups = {}
 for name, data in data_registry.items():
@@ -105,14 +104,16 @@ god_horse = top_16[0] if top_16 else None
 fig = go.Figure()
 
 tree_indices = []
+dash_indices = []
+table_indices = []
 
-# A. TREE VIEW: Parent Connectors & Hybrid Curves
+# --- A. TREE VIEW TRACES ---
 for name, row in horse_db.items():
     p1_n, p2_n = row["Parent1"], row["Parent2"]
     if p1_n in pos and p2_n in pos:
         p1, p2, child = pos[p1_n], pos[p2_n], pos[name]
         
-        # Light Gray Horizontal Parent Line (Restored)
+        # Horizontal Parent Line
         fig.add_trace(go.Scatter(x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
                                  line=dict(color="rgba(200,200,200,0.2)", width=1), hoverinfo='skip', showlegend=False))
         tree_indices.append(len(fig.data)-1)
@@ -126,96 +127,74 @@ for name, row in horse_db.items():
                                  line=dict(color=data_registry[name]["color"], width=2), opacity=0.5, hoverinfo='skip', showlegend=False))
         tree_indices.append(len(fig.data)-1)
 
-# Nodes & Labels (Unified Labels)
+# Nodes & Legend
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
     is_dead = horse_db[name].get("Status") == "Dead"
-    sorted_dna = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
-    dom_blood = sorted_dna[0][0]
-    
-    label_text = f"<b>{name.upper()}</b><br>{int(sorted_dna[0][1]*100)}% {dom_blood}<br>S:{horse_db[name]['Speed']} F:{h_data['f']*100:.1f}%"
-    
     fig.add_trace(go.Scatter(
         x=[x], y=[y], mode='markers+text',
         text=[name.upper() if name != god_horse else f"★ {name.upper()}"],
-        textposition="bottom center",
-        textfont=dict(size=7, color="rgba(255,255,255,0.7)"),
-        marker=dict(
-            size=22 if name == god_horse else 12,
-            color='black' if is_dead else h_data["color"],
-            line=dict(width=2, color=h_data["color"]),
-            symbol="star" if name == god_horse else "circle"
-        ),
-        hovertext=label_text,
-        showlegend=False
+        textposition="bottom center", textfont=dict(size=7, color="rgba(255,255,255,0.7)"),
+        marker=dict(size=22 if name == god_horse else 12, color='black' if is_dead else h_data["color"],
+                    line=dict(width=2, color=h_data["color"]), symbol="star" if name == god_horse else "circle"),
+        hovertext=f"<b>{name.upper()}</b><br>Speed: {horse_db[name]['Speed']}<br>F: {h_data['f']*100:.1f}%", showlegend=False
     ))
     tree_indices.append(len(fig.data)-1)
 
-# B. DASHBOARD: Inbreeding Bar Chart & Trend
-dash_indices = []
+for blood, color in origin_colors.items():
+    fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color, size=10), name=blood))
+    tree_indices.append(len(fig.data)-1)
 
-# Global Inbreeding Analysis (Horizontal Bar)
+# --- B. DASHBOARD TRACES ---
 avg_f = np.mean([d['f'] for d in data_registry.values()])
 god_f = data_registry[god_horse]['f'] if god_horse else 0
-fig.add_trace(go.Bar(
-    y=["Global Avg", f"Fastest ({god_horse})"], x=[avg_f, god_f],
-    orientation='h', marker=dict(color=['#888', '#FFD700']),
-    visible=False, xaxis='x2', yaxis='y2', name="Inbreeding (F)"
-))
+fig.add_trace(go.Bar(y=["Global Avg", f"Fastest ({god_horse})"], x=[avg_f, god_f], orientation='h',
+                     marker=dict(color=['#888', '#FFD700']), visible=False, xaxis='x2', yaxis='y2', name="Inbreeding"))
 dash_indices.append(len(fig.data)-1)
 
-# Speed Trend (Scattered over Generations)
 gens = sorted(generation_groups.keys())
 avgs = [np.mean([float(horse_db[n]['Speed'] or 0) for n in generation_groups[g]]) for g in gens]
-fig.add_trace(go.Scatter(
-    x=gens, y=avgs, mode='lines+markers', line=dict(color='gold', width=4),
-    visible=False, xaxis='x3', yaxis='y3', name="Avg Speed Trend"
-))
+fig.add_trace(go.Scatter(x=gens, y=avgs, mode='lines+markers', line=dict(color='gold', width=4), 
+                         visible=False, xaxis='x3', yaxis='y3', name="Avg Speed"))
 dash_indices.append(len(fig.data)-1)
 
-# C. LEADERBOARD TABLE (Detailed Top 16)
+# --- C. LEADERBOARD TABLE ---
 table_data = []
 for i, name in enumerate(top_16, 1):
     dna_list = sorted(data_registry[name]["dna"].items(), key=lambda x: x[1], reverse=True)
-    composition = " | ".join([f"{int(v*100)}% {k}" for k, v in dna_list[:3]])
-    table_data.append([i, name, horse_db[name]['Speed'], f"{data_registry[name]['f']*100:.1f}%", composition])
+    comp = " | ".join([f"{int(v*100)}% {k}" for k, v in dna_list[:3]])
+    table_data.append([i, name, horse_db[name]['Speed'], f"{data_registry[name]['f']*100:.1f}%", comp])
 
-table_trace = go.Table(
-    header=dict(values=['RANK', 'NAME', 'SPD', 'F-SCORE', 'TOP DNA'], fill_color='#1a1a1a', align='left', font=dict(color='white')),
-    cells=dict(values=list(zip(*table_data)), fill_color='#050505', align='left', font=dict(color='white')),
+fig.add_trace(go.Table(
+    header=dict(values=['RANK', 'NAME', 'SPD', 'F-SCORE', 'TOP DNA'], fill_color='#1a1a1a', font=dict(color='white')),
+    cells=dict(values=list(zip(*table_data)), fill_color='#050505', font=dict(color='white')),
     visible=False
-)
-fig.add_trace(table_trace)
-table_index = len(fig.data) - 1
+))
+table_indices.append(len(fig.data)-1)
 
 # =====================================================
-# 4. FINAL LAYOUT & TOGGLE SWITCHES
+# 4. FINAL LAYOUT & MASTER TOGGLE
 # =====================================================
-total_traces = len(fig.data)
-tree_visible = [False] * total_traces
-for i in tree_indices: tree_visible[i] = True
-
-dash_visible = [False] * total_traces
-for i in dash_indices: dash_visible[i] = True
-
-table_visible = [False] * total_traces
-table_visible[table_index] = True
+total = len(fig.data)
+def get_vis(indices): return [True if i in indices else False for i in range(total)]
 
 fig.update_layout(
     updatemenus=[dict(
         type="dropdown", direction="down", x=0.01, y=0.99, showactive=True,
         buttons=[
             dict(label="Family Tree View", method="update", 
-                 args=[{"visible": tree_visible}, {"xaxis.visible": False, "yaxis.visible": False, "xaxis2.visible": False, "yaxis2.visible": False, "xaxis3.visible": False, "yaxis3.visible": False}]),
+                 args=[{"visible": get_vis(tree_indices)}, 
+                       {"xaxis.visible": False, "yaxis.visible": False, "xaxis2.visible": False, "yaxis2.visible": False, "xaxis3.visible": False, "yaxis3.visible": False, "showlegend": True}]),
             dict(label="Stats Dashboard", method="update", 
-                 args=[{"visible": dash_visible}, {"xaxis2.visible": True, "yaxis2.visible": True, "xaxis3.visible": True, "yaxis3.visible": True, "xaxis.visible": False, "yaxis.visible": False}]),
+                 args=[{"visible": get_vis(dash_indices)}, 
+                       {"xaxis2.visible": True, "yaxis2.visible": True, "xaxis3.visible": True, "yaxis3.visible": True, "xaxis.visible": False, "yaxis.visible": False, "showlegend": False}]),
             dict(label="Leaderboard Table", method="update", 
-                 args=[{"visible": table_visible}, {"xaxis.visible": False, "yaxis.visible": False, "xaxis2.visible": False, "yaxis2.visible": False, "xaxis3.visible": False, "yaxis3.visible": False}])
+                 args=[{"visible": get_vis(table_indices)}, 
+                       {"xaxis.visible": False, "yaxis.visible": False, "xaxis2.visible": False, "yaxis2.visible": False, "xaxis3.visible": False, "yaxis3.visible": False, "showlegend": False}])
         ],
         bgcolor="#111", font=dict(color="white")
     )],
     template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
-    # Dashboard Grid
     xaxis2=dict(domain=[0.05, 0.45], anchor='y2', visible=False, title="Inbreeding Coeff"),
     yaxis2=dict(domain=[0.6, 0.9], anchor='x2', visible=False),
     xaxis3=dict(domain=[0.55, 0.95], anchor='y3', visible=False, title="Generation"),
@@ -223,5 +202,8 @@ fig.update_layout(
     margin=dict(t=50, b=50, l=50, r=50)
 )
 
+now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+fig.add_annotation(text=f"Last Sync: {now}", xref="paper", yref="paper", x=1, y=0, showarrow=False, font=dict(color="gray"))
+
 fig.write_html("index.html", config={'scrollZoom': True})
-print("Build Successful: Interactive Dynasty Tree & Analytics integrated.")
+print(f"Build Successful at {now}. Open 'index.html' to view.")
