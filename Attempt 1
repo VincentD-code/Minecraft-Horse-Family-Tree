@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import plotly.express as px
 from datetime import datetime
 import os
 import json
@@ -10,8 +11,16 @@ import json
 # =====================================================
 csv_filename = "horse_data.csv"
 if not os.path.exists(csv_filename):
-    print(f"CRITICAL ERROR: '{csv_filename}' not found.")
-    exit()
+    # Creating dummy data for demonstration if file doesn't exist
+    data = {
+        "Name": ["Origin A", "Origin B", "Swift Child"],
+        "Parent1": ["", "", "Origin A"],
+        "Parent2": ["", "", "Origin B"],
+        "Speed": [50, 60, 75],
+        "OriginBlood": ["Star Strider", "Thunder Blood", "Thunder Blood"],
+        "Status": ["Alive", "Dead", "Alive"]
+    }
+    pd.DataFrame(data).to_csv(csv_filename, index=False)
 
 df = pd.read_csv(csv_filename).fillna("")
 for col in df.select_dtypes(include=['object']).columns:
@@ -73,7 +82,11 @@ def process_horse(name, depth=0):
         dna = {k: (res1["dna"].get(k, 0) + res2["dna"].get(k, 0)) / 2 for k in all_keys}
         color = mix_rgb_colors(dna)
         level = max(res1["level"], res2["level"]) + 1
-        mutation = (3 * current_speed) - float(horse_db[p1]['Speed']) - float(horse_db[p2]['Speed'])
+        
+        # Avoid KeyError if parents aren't in horse_db yet
+        p1_speed = float(horse_db[p1]['Speed']) if p1 in horse_db else current_speed
+        p2_speed = float(horse_db[p2]['Speed']) if p2 in horse_db else current_speed
+        mutation = (3 * current_speed) - p1_speed - p2_speed
 
     data_registry[name] = {"dna": dna, "color": color, "level": level, "mutation": mutation}
     ancestor_map[name] = get_ancestor_list(name)
@@ -100,7 +113,39 @@ def get_all_descendants(name):
 final_desc_map = {name: get_all_descendants(name) + [name] for name in horse_db}
 
 # =====================================================
-# 2. POSITIONING
+# 2. ADDITIONAL VISUALS (PIE/BAR/TABLE)
+# =====================================================
+# 1. Bloodline Pie Chart
+blood_totals = {}
+for h in data_registry.values():
+    for b, val in h['dna'].items():
+        blood_totals[b] = blood_totals.get(b, 0) + val
+pie_fig = px.pie(names=list(blood_totals.keys()), values=list(blood_totals.values()), 
+                 title="Total Bloodline Distribution", hole=0.4,
+                 color=list(blood_totals.keys()), color_discrete_map=origin_colors)
+pie_fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)")
+
+# 2. Speed Histogram
+speed_fig = px.histogram(df, x="Speed", title="Population Speed Distribution", 
+                         nbins=20, color_discrete_sequence=["#00F5FF"])
+speed_fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)")
+
+# 3. Stats Table
+table_fig = go.Figure(data=[go.Table(
+    header=dict(values=['Name', 'Speed', 'Bloodline', 'Status'],
+                fill_color='#111', align='left', font=dict(color='white', size=12)),
+    cells=dict(values=[df.Name, df.Speed, df.OriginBlood, df.Status],
+               fill_color='#222', align='left', font=dict(color='lightgrey', size=11))
+)])
+table_fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", margin=dict(l=0,r=0,t=0,b=0))
+
+# Convert figures to JSON
+pie_json = pie_fig.to_json()
+speed_json = speed_fig.to_json()
+table_json = table_fig.to_json()
+
+# =====================================================
+# 3. POSITIONING & TREE BUILD
 # =====================================================
 generation_groups = {}
 for name, data in data_registry.items():
@@ -113,9 +158,6 @@ for level, names in generation_groups.items():
     for idx, name in enumerate(names):
         pos[name] = ((idx * 20.0) - (width / 2), -level * 15.0) 
 
-# =====================================================
-# 3. PLOTLY TREE BUILDER
-# =====================================================
 fig = go.Figure()
 
 # --- PARENT LINES ---
@@ -148,7 +190,7 @@ for name, row in horse_db.items():
             name="line_child"
         ))
 
-# --- NODES & GLOW ---
+# Nodes
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
     row = horse_db[name]
@@ -190,8 +232,105 @@ fig.update_layout(
 )
 
 # =====================================================
-# 4. FULLY RESTORED & FIXED JS
+# 4. FINAL HTML & UI ASSEMBLY
 # =====================================================
+anc_json = json.dumps(ancestor_map)
+descendant_rel_map = {name: [] for name in horse_db}
+for child, row in horse_db.items():
+    for p in [row.get("Parent1"), row.get("Parent2")]:
+        if p and p in descendant_rel_map: descendant_rel_map[p].append(child)
+
+full_descendant_map = {}
+def get_all_descendants(name):
+    if name in full_descendant_map: return full_descendant_map[name]
+    direct = descendant_rel_map.get(name, [])
+    all_desc = list(direct)
+    for child in direct: all_desc.extend(get_all_descendants(child))
+    full_descendant_map[name] = list(set(all_desc))
+    return full_descendant_map[name]
+
+final_desc_map = {name: get_all_descendants(name) + [name] for name in horse_db}
+desc_json = json.dumps(final_desc_map)
+
+html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
+
+ui_overlays = f"""
+<style>
+    .data-btn {{ background: #222; color: #eee; border: 1px solid #444; padding: 10px; cursor: pointer; font-family: monospace; border-radius: 4px; margin-bottom: 5px; width: 150px; text-align: left; transition: 0.3s; }}
+    .data-btn:hover {{ background: #00F5FF; color: #000; }}
+    #popup-container {{ display: none; position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: rgba(5,5,5,0.95); border: 2px solid #444; z-index: 10000; border-radius: 12px; box-shadow: 0 0 50px rgba(0,0,0,0.8); }}
+    #close-popup {{ position: absolute; top: 10px; right: 20px; color: white; font-size: 30px; cursor: pointer; }}
+    #popup-content {{ width: 100%; height: 100%; padding: 20px; box-sizing: border-box; }}
+</style>
+
+<div id="mode-ui" style="position:fixed; top:20px; left:20px; z-index:999; background:rgba(20,20,20,0.9); padding:15px; border:1px solid #444; color:white; font-family:monospace; border-radius:8px;">
+    <div id="mode-text" style="color:#00F5FF; font-weight:bold; font-size:16px; margin-bottom:10px;">MODE: ANCESTORS</div>
+    <div style="font-size:10px; color:#888; margin-bottom:15px;">CLICK NODES TO HIGHLIGHT</div>
+    <button class="data-btn" onclick="showPopup('pie')">📊 Bloodlines</button><br>
+    <button class="data-btn" onclick="showPopup('speed')">📈 Speed Dist.</button><br>
+    <button class="data-btn" onclick="showPopup('table')">📋 Horse Table</button>
+</div>
+
+<div id="popup-container">
+    <span id="close-popup" onclick="hidePopup()">&times;</span>
+    <div id="popup-content"></div>
+</div>
+
+<script>
+var ancestorMap = {anc_json};
+var descendantMap = {desc_json};
+var charts = {{ 'pie': {pie_json}, 'speed': {speed_json}, 'table': {table_json} }};
+var currentMode = 'ancestors';
+
+function showPopup(type) {{
+    document.getElementById('popup-container').style.display = 'block';
+    var content = document.getElementById('popup-content');
+    content.innerHTML = '';
+    var chartDiv = document.createElement('div');
+    chartDiv.style.width = '100%';
+    chartDiv.style.height = '100%';
+    content.appendChild(chartDiv);
+    Plotly.newPlot(chartDiv, charts[type].data, charts[type].layout);
+}}
+
+function hidePopup() {{
+    document.getElementById('popup-container').style.display = 'none';
+}}
+
+window.addEventListener('load', function() {{
+    var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
+    
+    document.getElementById('mode-ui').onclick = function(e) {{
+        if(e.target.className !== 'data-btn') {{
+            currentMode = (currentMode === 'ancestors') ? 'descendants' : 'ancestors';
+            document.getElementById('mode-text').innerText = 'MODE: ' + currentMode.toUpperCase();
+            document.getElementById('mode-text').style.color = (currentMode === 'ancestors') ? '#00F5FF' : '#FF4500';
+        }}
+    }};
+
+    graphDiv.on('plotly_click', function(data){{
+        if (!data || !data.points.length) return;
+        var selectedHorse = data.points[0].customdata;
+        if (Array.isArray(selectedHorse)) selectedHorse = selectedHorse[0];
+        if (typeof selectedHorse === 'object') selectedHorse = selectedHorse.child;
+
+        var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
+        var relatedSet = targetMap[selectedHorse] || [selectedHorse];
+        
+        var opacities = [];
+        for(var i=0; i<graphDiv.data.length; i++){{
+            var trace = graphDiv.data[i];
+            var traceHorse = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
+            if(typeof traceHorse === 'object') traceHorse = traceHorse.child;
+            
+            var isRelated = relatedSet.includes(traceHorse);
+            opacities.push(isRelated ? 1.0 : 0.05);
+        }}
+        Plotly.restyle(graphDiv, {{ 'opacity': opacities }});
+    }});
+}});
+</script>
+"""
 anc_json = json.dumps(ancestor_map)
 desc_json = json.dumps(final_desc_map)
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
@@ -300,6 +439,6 @@ window.addEventListener('load', function() {{
 """
 
 with open("index.html", "w", encoding="utf-8") as f:
-    f.write(html_content.replace('</body>', js_script + '</body>'))
+    f.write(html_content.replace('</body>', ui_overlays + '</body>'))
 
-print("Full build complete. All UI elements restored and logic fixed.")
+print("Build Complete: Open 'index.html' to see the tree and the new Data Hub popups.")
