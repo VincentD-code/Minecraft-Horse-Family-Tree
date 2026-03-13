@@ -364,6 +364,9 @@ gen_speeds = {}
 
 for name, data in data_registry.items():
 
+    if horse_db[name].get("OriginBlood") == "Slothsoul":
+        continue
+
     lvl = data['level']
     spd = float(horse_db[name].get('Speed', 0))
 
@@ -389,7 +392,7 @@ def calculate_global_genetics(include_dead=True):
 
         for bloodline, percent in dna.items():
 
-            if bloodline != "Unknown":
+            if bloodline not in ["Unknown", "Slothsoul"]:
                 totals[bloodline] = totals.get(bloodline, 0) + percent
 
         count += 1
