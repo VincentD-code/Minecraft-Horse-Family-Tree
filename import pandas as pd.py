@@ -3,6 +3,7 @@ import numpy as np
 import plotly.graph_objects as go
 from datetime import datetime
 import os
+import json
 
 # =====================================================
 # 1. DATA LOADING & LOGIC ENGINE
@@ -29,7 +30,6 @@ origin_colors = {
     "Unknown": "#444444"
 }
 
-# Identify the fastest horse for the "God Horse" glow effect
 fastest_horse_name = df.loc[pd.to_numeric(df['Speed']).idxmax(), 'Name']
 
 def mix_rgb_colors(dna_weights):
@@ -44,6 +44,17 @@ def mix_rgb_colors(dna_weights):
     return f'rgb({int(r*255)},{int(g*255)},{int(b*255)})'
 
 data_registry = {}
+# Dictionary to store ancestors for the JS highlighter
+ancestor_map = {}
+
+def get_ancestor_list(name):
+    if not name or name not in horse_db: return []
+    p1 = horse_db[name].get("Parent1")
+    p2 = horse_db[name].get("Parent2")
+    ancestors = [name]
+    if p1: ancestors.extend(get_ancestor_list(p1))
+    if p2: ancestors.extend(get_ancestor_list(p2))
+    return list(set(ancestors))
 
 def process_horse(name, depth=0):
     if depth > 25 or name == "" or name not in horse_db: 
@@ -63,13 +74,10 @@ def process_horse(name, depth=0):
         dna = {k: (res1["dna"].get(k, 0) + res2["dna"].get(k, 0)) / 2 for k in all_keys}
         color = mix_rgb_colors(dna)
         level = max(res1["level"], res2["level"]) + 1
-        
-        # Mutation = (3 * ChildSpeed) - Parent1Speed - Parent2Speed
-        s1 = float(horse_db[p1].get("Speed") or 0)
-        s2 = float(horse_db[p2].get("Speed") or 0)
-        mutation = (3 * current_speed) - s1 - s2
+        mutation = (3 * current_speed) - float(horse_db[p1]['Speed']) - float(horse_db[p2]['Speed'])
 
     data_registry[name] = {"dna": dna, "color": color, "level": level, "mutation": mutation}
+    ancestor_map[name] = get_ancestor_list(name)
     return data_registry[name]
 
 for name in horse_db: process_horse(name)
@@ -93,95 +101,122 @@ for level, names in generation_groups.items():
 # =====================================================
 fig = go.Figure()
 
-# --- CONNECTIONS (LINES) ---
+# --- CONNECTIONS ---
 for name, row in horse_db.items():
     p1_n, p2_n = row["Parent1"], row["Parent2"]
     if p1_n in pos and p2_n in pos:
         p1, p2, child = pos[p1_n], pos[p2_n], pos[name]
         
-        # 1. LIGHT GRAY PARENT-TO-PARENT LINE (Essential)
+        # Parent-to-Parent Horizontal
         fig.add_trace(go.Scatter(
-            x=[p1[0], p2[0]], y=[p1[1], p2[1]], 
-            mode='lines', 
+            x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
             line=dict(color="rgba(180,180,180,0.4)", width=1.5), 
-            hoverinfo='skip', showlegend=False
+            hoverinfo='skip', showlegend=False,
+            customdata=[name], # Store child name to know which lineage this belongs to
+            name="line"
         ))
 
-        # 2. COLORED CURVES TO CHILD
+        # Colored Curves
         mid_x, mid_y = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
         t = np.linspace(0, 1, 15)
         curve_x = (1-t)**3 * mid_x + 3*(1-t)**2*t * mid_x + 3*(1-t)*t**2 * child[0] + t**3 * child[0]
         curve_y = (1-t)**3 * mid_y + 3*(1-t)**2*t * (mid_y - 4) + 3*(1-t)*t**2 * (child[1] + 4) + t**3 * child[1]
         fig.add_trace(go.Scatter(
-            x=curve_x, y=curve_y, 
-            mode='lines', 
+            x=curve_x, y=curve_y, mode='lines', 
             line=dict(color=data_registry[name]["color"], width=2), 
-            opacity=0.3, hoverinfo='skip', showlegend=False
+            opacity=0.3, hoverinfo='skip', showlegend=False,
+            customdata=[name],
+            name="line"
         ))
 
 # --- NODES ---
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
     row = horse_db[name]
-    is_dead = row.get("Status") == "Dead"
     is_god = (name == fastest_horse_name)
     
     display_name = f"★ GOD HORSE: {name.upper()} ★" if is_god else name.upper()
-    node_size = 22 if is_god else 14
-    text_color = "#FFD700" if is_god else "rgba(255,255,255,0.8)"
-
-    # Glow Effect for God Horse
-    if is_god:
-        fig.add_trace(go.Scatter(
-            x=[x], y=[y], mode='markers',
-            marker=dict(size=node_size+18, color=h_data["color"], opacity=0.25),
-            hoverinfo='skip', showlegend=False
-        ))
-
-    # DNA & Parent Tooltips
+    
+    # Hover Info
     dna_sorted = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
     dna_str = "<br>".join([f"  • {k}: {v*100:.1f}%" for k, v in dna_sorted if v > 0])
     p1, p2 = row.get("Parent1"), row.get("Parent2")
-    parent_info = "Foundation Horse"
-    if p1 and p2:
-        s1, s2 = horse_db[p1].get("Speed"), horse_db[p2].get("Speed")
-        parent_info = f"Parents: {p1} ({s1}) & {p2} ({s2})<br>Breeding Roll: {h_data['mutation']:.2f}"
-
-    hover_label = (
-        f"<b>{display_name}</b><br>"
-        f"Speed: {row['Speed']}<br>"
-        f"{parent_info}<br>"
-        f"<b>Bloodline Density:</b><br>{dna_str}"
-    )
+    parent_info = f"Parents: {p1} & {p2}<br>Roll: {h_data['mutation']:.2f}" if p1 else "Foundation"
 
     fig.add_trace(go.Scatter(
         x=[x], y=[y], mode='markers+text',
-        text=[display_name],
-        textposition="bottom center", 
-        textfont=dict(size=10 if is_god else 8, color=text_color),
-        marker=dict(
-            size=node_size, 
-            color='black' if is_dead else h_data["color"],
-            line=dict(width=3 if is_god else 1.5, color="#FFD700" if is_god else "rgba(255,255,255,0.3)"),
-            symbol="star" if is_god else "circle"
-        ),
-        hovertext=hover_label, hoverinfo="text", showlegend=False
+        text=[display_name], textposition="bottom center",
+        marker=dict(size=22 if is_god else 14, color=h_data["color"], 
+                    symbol="star" if is_god else "circle",
+                    line=dict(width=3 if is_god else 1.5, color="#FFD700" if is_god else "white")),
+        hovertext=f"<b>{display_name}</b><br>Speed: {row['Speed']}<br>{parent_info}<br>{dna_str}",
+        hoverinfo="text",
+        customdata=[name],
+        name="node"
     ))
 
-# --- LEGEND ---
+# Legend
 for blood, color in origin_colors.items():
-    fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color, size=10), name=blood))
+    fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', marker=dict(color=color), name=blood))
 
-# =====================================================
-# 4. LAYOUT
-# =====================================================
 fig.update_layout(
-    title=f"Horse Pedigree Tree | Fastest: {fastest_horse_name}",
+    title="Pedigree Tree: Click a Horse to Highlight Ancestors",
     template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
     xaxis=dict(visible=False), yaxis=dict(visible=False),
-    showlegend=True, margin=dict(t=80, b=50, l=50, r=50),
-    hoverlabel=dict(bgcolor="#111", font_size=12, font_family="monospace")
+    clickmode='event+select'
 )
 
-fig.write_html("index.html", config={'scrollZoom': True})
-print(f"Build Successful. Horizontal parent lines restored. God Horse: {fastest_horse_name}.")
+# =====================================================
+# 4. JAVASCRIPT INJECTION FOR HIGHLIGHTING
+# =====================================================
+anc_json = json.dumps(ancestor_map)
+
+html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
+
+# Injected script: Listens for click, checks ancestor map, dims everyone else
+js_script = f"""
+<script>
+var ancestorMap = {anc_json};
+var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
+
+graphDiv.on('plotly_click', function(data){{
+    var selectedHorse = data.points[0].customdata;
+    var ancestors = ancestorMap[selectedHorse] || [];
+    
+    var update = {{
+        'opacity': [],
+        'marker.opacity': [],
+        'line.width': []
+    }};
+
+    var totalTraces = graphDiv.data.length;
+    for(var i=0; i<totalTraces; i++){{
+        var trace = graphDiv.data[i];
+        var traceHorse = trace.customdata ? trace.customdata[0] : null;
+        
+        // If trace is a node or line belonging to an ancestor, keep it bright
+        if (traceHorse && ancestors.includes(traceHorse)) {{
+            update.opacity.push(1.0);
+            update['line.width'].push(trace.name === "line" ? 4 : null);
+        }} else if (trace.name === "line" || trace.name === "node") {{
+            update.opacity.push(0.05);
+            update['line.width'].push(trace.name === "line" ? 0.5 : null);
+        }} else {{
+            update.opacity.push(1.0); // Legend items
+            update['line.width'].push(null);
+        }}
+    }}
+    Plotly.restyle(graphDiv, update);
+}});
+
+// Reset on double click
+graphDiv.on('plotly_doubleclick', function() {{
+    Plotly.restyle(graphDiv, {{'opacity': 1.0, 'line.width': 2}});
+}});
+</script>
+"""
+
+with open("index.html", "w", encoding="utf-8") as f:
+    f.write(html_content.replace('</body>', js_script + '</body>'))
+
+print("Interactive tree built. Open 'index.html' and click a horse!")
