@@ -195,7 +195,7 @@ fig.update_layout(
 # --- Data Calculations for UI ---
 top_16_speed = df.nlargest(16, 'Speed')[['Name', 'Speed']].to_dict('records')
 
-# Calculate Avg Speed per Gen
+# Calculate Avg Speed per Gen from the horse_db and data_registry
 gen_speeds = {}
 for name, data in data_registry.items():
     lvl = data['level']
@@ -218,25 +218,26 @@ ui_html = f"""
 <style>
     /* Binder UI Positioning */
     #binder-container {{
-        position: fixed; top: 5%; right: -400px; width: 380px; height: 85vh;
+        position: fixed; top: 5%; right: -380px; width: 380px; height: 85vh;
         transition: 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28); z-index: 10000;
         font-family: 'Segoe UI', Tahoma, sans-serif;
     }}
-    #binder-container.active {{ right: 0; }}
+    /* The active class slides the binder in */
+    #binder-container.active {{ right: 0 !important; }}
 
     /* Tab Stack */
     .tab-stack {{
-        position: absolute; left: -65px; top: 40px;
-        display: flex; flex-direction: column; gap: 12px;
+        position: absolute; left: -60px; top: 40px;
+        display: flex; flex-direction: column; gap: 10px;
     }}
     .binder-tab {{
-        width: 65px; height: 80px; background: #1a1a1a; border: 1px solid #444;
+        width: 60px; height: 75px; background: #1a1a1a; border: 1px solid #444;
         border-right: none; color: #00F5FF; display: flex; align-items: center;
         justify-content: center; cursor: pointer; border-radius: 12px 0 0 12px;
-        font-size: 28px; transition: 0.3s; box-shadow: -5px 5px 15px rgba(0,0,0,0.6);
+        font-size: 24px; transition: 0.3s; box-shadow: -5px 5px 15px rgba(0,0,0,0.5);
     }}
-    .binder-tab:hover {{ width: 70px; left: -5px; color: #FFD700; }}
-    .binder-tab.active-tab {{ background: #121212; color: #FFD700; width: 75px; left: -10px; border-left: 4px solid #FFD700; z-index: 10001; }}
+    .binder-tab:hover {{ background: #222; width: 65px; left: -5px; }}
+    .binder-tab.active-tab {{ background: #121212; color: #FFD700; width: 70px; left: -10px; border-left: 4px solid #FFD700; z-index: 10001; }}
 
     /* Binder Pages */
     .binder-page {{
@@ -260,6 +261,14 @@ ui_html = f"""
     th {{ text-align: left; color: #888; font-size: 11px; padding-bottom: 10px; }}
     td {{ padding: 12px 8px; border-bottom: 1px solid #222; font-size: 13px; font-family: monospace; color: #fff; cursor: pointer; }}
     tr:hover td {{ background: rgba(0, 245, 255, 0.1); color: #00F5FF; }}
+
+    /* Minimize Button at bottom of pages */
+    .minimize-btn {{
+        margin-top: 30px; text-align: center; color: #666; font-size: 11px; 
+        cursor: pointer; padding: 10px; border-top: 1px solid #222; transition: 0.2s;
+        font-family: monospace;
+    }}
+    .minimize-btn:hover {{ color: #FF4500; background: rgba(255, 69, 0, 0.05); }}
     
     /* Global Overlay UI */
     #mode-ui {{
@@ -267,19 +276,13 @@ ui_html = f"""
         padding:15px; border:1px solid #444; color:white; font-family:monospace; 
         border-radius:8px; cursor:pointer; user-select:none;
     }}
-    
-    .minimize-btn {{
-        margin-top: 30px; text-align: center; color: #555; font-size: 11px; 
-        cursor: pointer; padding: 10px; border: 1px dashed #333; border-radius: 5px;
-    }}
-    .minimize-btn:hover {{ color: #FF4500; border-color: #FF4500; }}
 </style>
 
 <div id="binder-container">
     <div class="tab-stack">
-        <div class="binder-tab active-tab" onclick="openTab(0)">🏆</div>
-        <div class="binder-tab" onclick="openTab(1)">📈</div>
-        <div class="binder-tab" onclick="openTab(2)">🧬</div>
+        <div class="binder-tab active-tab" onclick="openTab(0)" title="Leaderboard">🏆</div>
+        <div class="binder-tab" onclick="openTab(1)" title="Gen Stats">📈</div>
+        <div class="binder-tab" onclick="openTab(2)" title="Genetic Breakdown">🧬</div>
     </div>
 
     <div id="page-0" class="binder-page active-page">
@@ -288,13 +291,13 @@ ui_html = f"""
             <thead><tr><th>#</th><th>NAME</th><th>SPEED</th></tr></thead>
             <tbody id="top-16-body"></tbody>
         </table>
-        <div class="minimize-btn" onclick="toggleBinder(false)">[ MINIMIZE BINDER ]</div>
+        <div class="minimize-btn" onclick="toggleBinder()">[ MINIMIZE BINDER ]</div>
     </div>
 
     <div id="page-1" class="binder-page">
         <div class="page-header">PERFORMANCE BY GEN</div>
         <div id="gen-stats-container"></div>
-        <div class="minimize-btn" onclick="toggleBinder(false)">[ MINIMIZE BINDER ]</div>
+        <div class="minimize-btn" onclick="toggleBinder()">[ MINIMIZE BINDER ]</div>
     </div>
 
     <div id="page-2" class="binder-page">
@@ -302,7 +305,7 @@ ui_html = f"""
         <div id="blood-alive-container"></div>
         <div class="page-header" style="margin-top:30px;">GENETIC SPLIT (ALL)</div>
         <div id="blood-all-container"></div>
-        <div class="minimize-btn" onclick="toggleBinder(false)">[ MINIMIZE BINDER ]</div>
+        <div class="minimize-btn" onclick="toggleBinder()">[ MINIMIZE BINDER ]</div>
     </div>
 </div>
 
@@ -321,15 +324,14 @@ var stats = {stats_json};
 var currentMode = 'ancestors'; 
 var currentHighlighted = null;
 
-function toggleBinder(forceState) {{
-    const binder = document.getElementById('binder-container');
-    if (forceState === true) binder.classList.add('active');
-    else if (forceState === false) binder.classList.remove('active');
-    else binder.classList.toggle('active');
+// Toggles the slide-in/out state
+function toggleBinder() {{
+    document.getElementById('binder-container').classList.toggle('active');
 }}
 
+// Switches pages and ensures binder is open
 function openTab(index) {{
-    toggleBinder(true);
+    document.getElementById('binder-container').classList.add('active');
     document.querySelectorAll('.binder-page').forEach(p => p.classList.remove('active-page'));
     document.querySelectorAll('.binder-tab').forEach(t => t.classList.remove('active-tab'));
     document.getElementById('page-' + index).classList.add('active-page');
@@ -353,8 +355,7 @@ window.addEventListener('load', function() {{
 
     // 2. POPULATE GENERATION ANALYTICS
     const genCont = document.getElementById('gen-stats-container');
-    const speeds = Object.values(stats.avg_speed);
-    const maxSpd = speeds.length > 0 ? Math.max(...speeds) : 100;
+    const maxSpd = Math.max(...Object.values(stats.avg_speed));
     Object.entries(stats.avg_speed).forEach(([gen, spd]) => {{
         let barWidth = (spd / maxSpd) * 100;
         genCont.innerHTML += `<div class="stat-section">
@@ -415,18 +416,22 @@ window.addEventListener('load', function() {{
         currentHighlighted = null;
     }}
 
+    // KEYBOARD LISTENER
     document.addEventListener('keydown', (e) => {{ if(e.key.toLowerCase() === 'm') toggleMode(); }});
 
+    // PLOTLY CLICK EVENTS
     graphDiv.on('plotly_click', function(data){{
         if (!data || !data.points) return;
         var pt = data.points[0];
         var raw = pt.customdata;
         var name = (raw && typeof raw === 'object') ? (raw.child || raw[0]) : (Array.isArray(raw) ? raw[0] : raw);
         if (!name) return;
+
         if (currentHighlighted === name) resetToDefault();
         else {{ currentHighlighted = name; highlightLogic(name); }}
     }});
 
+    // RESET ON BACKGROUND CLICK
     graphDiv.on('plotly_doubleclick', resetToDefault);
     graphDiv.addEventListener('mousedown', (e) => {{ if(e.target.classList.contains('nsewdrag')) resetToDefault(); }});
 }});
