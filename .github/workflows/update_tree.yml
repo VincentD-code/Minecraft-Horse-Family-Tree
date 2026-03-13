@@ -3,8 +3,9 @@ name: Update Horse Dynasty Website
 on:
   push:
     paths:
-      - 'horse_data.csv'  # Runs only when you change your data
-  workflow_dispatch:      # Allows you to run it manually for testing
+      - 'horse_data.csv'
+      - '*.py' # Also runs if you update your script
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,21 +18,24 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/checkout@v4
+        uses: actions/setup-python@v4 # Fixed: used setup-python action
         with:
           python-version: '3.10'
 
       - name: Install Dependencies
         run: |
-          pip install pandas numpy plotly
+          pip install pandas numpy plotly  # Added plotly here
+
+      - name: List files (Debug)
+        run: ls -R  # This helps us see if the CSV and PY files are in the right place
 
       - name: Run Script
-        run: python your_script_name.py  # <--- CHANGE THIS to your actual .py file name
+        run: python  Attempt 1 # <--- TRIPLE CHECK THIS FILENAME
 
       - name: Commit and Push index.html
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Auto-update family tree from CSV" || exit 0
-          git push
+          # Only commit if there are changes to avoid erroring out
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update tree" && git push)
