@@ -107,7 +107,7 @@ for name, row in horse_db.items():
         p1, p2 = pos[p1_n], pos[p2_n]
         fig.add_trace(go.Scatter(
             x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
-            line=dict(color="rgba(100,100,100,0.15)", width=1),
+            line=dict(color="rgba(180,180,180,0.25)", width=1.5), # Slightly more opaque as requested
             hoverinfo='skip', showlegend=False,
             customdata=[name], name="line_parent"
         ))
@@ -124,7 +124,7 @@ for name, row in horse_db.items():
         fig.add_trace(go.Scatter(
             x=curve_x, y=curve_y, mode='lines', 
             line=dict(color=data_registry[name]["color"], width=2.5), 
-            opacity=0.4, hoverinfo='skip', showlegend=False,
+            opacity=0.45, hoverinfo='skip', showlegend=False,
             customdata=[name], name="line_child"
         ))
 
@@ -139,17 +139,11 @@ for name, (x, y) in pos.items():
     line_width = 3 if (is_god or is_dead) else 1.5
     display_name = f"★ GOD HORSE: {name.upper()} ★" if is_god else name.upper()
     
-    # Tooltip setup
-    dna_sorted = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
-    dna_str = "<br>".join([f"  • {k}: {v*100:.1f}%" for k, v in dna_sorted if v > 0])
-    p1, p2 = row.get("Parent1"), row.get("Parent2")
-    parent_info = f"Parents: {p1} & {p2}<br>Roll: {h_data['mutation']:.2f}" if p1 else "Foundation"
-
     if is_god:
         fig.add_trace(go.Scatter(
             x=[x], y=[y], mode='markers',
             marker=dict(size=35, color=h_data["color"], opacity=0.2),
-            hoverinfo='skip', showlegend=False
+            hoverinfo='skip', showlegend=False, name="glow"
         ))
 
     fig.add_trace(go.Scatter(
@@ -159,20 +153,18 @@ for name, (x, y) in pos.items():
                     color=node_fill, 
                     symbol="star" if is_god else "circle",
                     line=dict(width=line_width, color="#FFD700" if is_god else h_data["color"])),
-        hovertext=f"<b>{display_name}</b> ({'DEAD' if is_dead else 'ALIVE'})<br>Speed: {row['Speed']}<br>{parent_info}<br>{dna_str}",
         hoverinfo="text", customdata=[name], name="node"
     ))
 
 fig.update_layout(
-    title="Interactive Pedigree Map (Click to Toggle Ancestors)",
     template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
     xaxis=dict(visible=False), yaxis=dict(visible=False),
-    clickmode='event+select', showlegend=False, # Legend removed
-    margin=dict(t=80, b=50, l=50, r=50)
+    clickmode='event+select', showlegend=False,
+    margin=dict(t=50, b=50, l=50, r=50)
 )
 
 # =====================================================
-# 4. JAVASCRIPT INJECTION (TOGGLE HIGHLIGHTING)
+# 4. JAVASCRIPT INJECTION (FIXED RESET BUG)
 # =====================================================
 anc_json = json.dumps(ancestor_map)
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True})
@@ -183,13 +175,26 @@ var ancestorMap = {anc_json};
 var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 var currentHighlighted = null;
 
+function resetToDefault() {{
+    var opacities = [];
+    var widths = [];
+    for(var i=0; i<graphDiv.data.length; i++){{
+        var trace = graphDiv.data[i];
+        if (trace.name === "line_parent") opacities.push(0.25);
+        else if (trace.name === "line_child") opacities.push(0.45);
+        else if (trace.name === "glow") opacities.push(0.2);
+        else opacities.push(1.0); // nodes
+        
+        widths.push(trace.name === "line_child" ? 2.5 : (trace.name === "line_parent" ? 1.5 : null));
+    }}
+    Plotly.restyle(graphDiv, {{ 'opacity': opacities, 'line.width': widths }});
+    currentHighlighted = null;
+}}
+
 graphDiv.on('plotly_click', function(data){{
     var selectedHorse = data.points[0].customdata;
-    
-    // Toggle logic: If clicking the same horse or if already highlighting, reset
     if (currentHighlighted === selectedHorse) {{
-        Plotly.restyle(graphDiv, {{ 'opacity': 1.0, 'line.width': 2.5 }});
-        currentHighlighted = null;
+        resetToDefault();
         return;
     }}
 
@@ -205,20 +210,19 @@ graphDiv.on('plotly_click', function(data){{
         if (traceHorse && ancestors.includes(traceHorse)) {{
             update.opacity.push(1.0);
             update['line.width'].push(trace.name.includes("line") ? 5 : null);
-        }} else if (trace.name && (trace.name.includes("line") || trace.name === "node")) {{
+        }} else if (trace.name === "glow") {{
+             update.opacity.push(0.02);
+             update['line.width'].push(null);
+        }} else {{
             update.opacity.push(0.04);
             update['line.width'].push(trace.name.includes("line") ? 0.5 : null);
-        }} else {{
-            update.opacity.push(1.0);
-            update['line.width'].push(null);
         }}
     }}
     Plotly.restyle(graphDiv, update);
 }});
 
 graphDiv.on('plotly_doubleclick', function() {{
-    Plotly.restyle(graphDiv, {{ 'opacity': 1.0, 'line.width': 2.5 }});
-    currentHighlighted = null;
+    resetToDefault();
 }});
 </script>
 """
@@ -226,4 +230,4 @@ graphDiv.on('plotly_doubleclick', function() {{
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(html_content.replace('</body>', js_script + '</body>'))
 
-print("Build Complete. Click a horse to toggle highlighting; click it again to exit.")
+print("Fix Complete. Parent lines are 25% opaque. Double-click or re-clicking now resets to original default layered view.")
