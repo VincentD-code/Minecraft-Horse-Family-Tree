@@ -1,13 +1,11 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import matplotlib.colors as mcolors
-from matplotlib.path import Path
 import numpy as np
+import plotly.graph_objects as go
+from datetime import datetime
 import os
 
 # =====================================================
-# 1. DATA LOADING & COLOR UTILS
+# 1. DATA LOADING & LOGIC ENGINE
 # =====================================================
 csv_filename = "horse_data.csv"
 if not os.path.exists(csv_filename):
@@ -36,34 +34,28 @@ def mix_rgb_colors(dna_weights):
     r, g, b = 0, 0, 0
     for bloodline, percentage in dna_weights.items():
         hex_c = origin_colors.get(bloodline, "#444444")
-        rgb = mcolors.to_rgb(hex_c)
-        r += rgb[0] * percentage
-        g += rgb[1] * percentage
-        b += rgb[2] * percentage
-    return mcolors.to_hex((r, g, b))
+        h = hex_c.lstrip('#')
+        rgb = tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+        r += (rgb[0] / 255) * percentage
+        g += (rgb[1] / 255) * percentage
+        b += (rgb[2] / 255) * percentage
+    return f'rgb({int(r*255)},{int(g*255)},{int(b*255)})'
 
-# =====================================================
-# 2. LOGIC ENGINE (INBREEDING & DNA)
-# =====================================================
 data_registry = {}
 
 def get_ancestors(name):
-    if name == "" or name not in horse_db:
-        return {}
+    if name == "" or name not in horse_db: return {}
     row = horse_db[name]
     p1, p2 = row.get("Parent1", ""), row.get("Parent2", "")
-    if p1 == "" or p2 == "":
-        return {name: 1.0}
-    anc1 = get_ancestors(p1)
-    anc2 = get_ancestors(p2)
+    if p1 == "" or p2 == "": return {name: 1.0}
+    anc1, anc2 = get_ancestors(p1), get_ancestors(p2)
     combined = {name: 1.0}
     for k, v in anc1.items(): combined[k] = combined.get(k, 0) + v * 0.5
     for k, v in anc2.items(): combined[k] = combined.get(k, 0) + v * 0.5
     return combined
 
 def calculate_inbreeding(p1, p2):
-    if not p1 or not p2 or p1 not in horse_db or p2 not in horse_db:
-        return 0.0
+    if not p1 or not p2 or p1 not in horse_db or p2 not in horse_db: return 0.0
     anc1, anc2 = get_ancestors(p1), get_ancestors(p2)
     common = set(anc1.keys()) & set(anc2.keys())
     return sum(anc1[anc] * anc2[anc] * 0.5 for anc in common)
@@ -72,10 +64,8 @@ def process_horse(name, depth=0):
     if depth > 25 or name == "" or name not in horse_db: 
         return {"dna": {"Unknown": 1.0}, "color": "#444444", "level": 0, "f": 0}
     if name in data_registry: return data_registry[name]
-    
     row = horse_db[name]
     p1, p2 = row.get("Parent1", ""), row.get("Parent2", "")
-    
     if p1 == "" or p2 == "":
         blood = row.get("OriginBlood", "Unknown")
         dna, color, level, f_score = {blood: 1.0}, origin_colors.get(blood, "#444444"), 0, 0.0
@@ -86,19 +76,18 @@ def process_horse(name, depth=0):
         color = mix_rgb_colors(dna)
         level = max(res1["level"], res2["level"]) + 1
         f_score = calculate_inbreeding(p1, p2)
-        
     data_registry[name] = {"dna": dna, "color": color, "level": level, "f": f_score}
     return data_registry[name]
 
 for name in horse_db: process_horse(name)
 
+# =====================================================
+# 2. POSITIONING & TOP 16 STATS
+# =====================================================
 generation_groups = {}
 for name, data in data_registry.items():
     generation_groups.setdefault(data["level"], []).append(name)
 
-# =====================================================
-# 3. POSITIONING & AGGREGATION
-# =====================================================
 pos = {}
 for level, names in generation_groups.items():
     names.sort(key=lambda x: float(horse_db[x].get("Speed", 0) or 0), reverse=True)
@@ -110,117 +99,129 @@ alive_horses = [n for n, d in horse_db.items() if d.get("Status") == "Alive"]
 top_16 = sorted(alive_horses, key=lambda x: float(horse_db[x].get("Speed", 0) or 0), reverse=True)[:16]
 god_horse = top_16[0] if top_16 else None
 
-aggregate_dna = {}
-for name in top_16:
-    dna = data_registry[name]["dna"]
-    for bloodline, val in dna.items():
-        aggregate_dna[bloodline] = aggregate_dna.get(bloodline, 0) + val
-
 # =====================================================
-# 4. FIGURE 1: THE FAMILY TREE (TITLE REMOVED)
+# 3. PLOTLY MULTI-MODE BUILDER
 # =====================================================
-fig1 = plt.figure(figsize=(30, 24), facecolor='#050505')
-ax1 = fig1.add_subplot(111); ax1.set_facecolor('#050505')
+fig = go.Figure()
 
-def draw_hybrid_curves(p1_name, p2_name, child_name):
-    p1, p2, child_pos = pos[p1_name], pos[p2_name], pos[child_name]
-    child_color = data_registry[child_name]["color"]
-    ax1.plot([p1[0], p2[0]], [p1[1], p2[1]], color="#555555", lw=1.2, ls='-', alpha=0.3, zorder=1)
-    mid_x, mid_y = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
-    path_data = [(Path.MOVETO, (mid_x, mid_y)), (Path.CURVE4, (mid_x, mid_y - 4)), 
-                 (Path.CURVE4, (child_pos[0], child_pos[1] + 4)), (Path.CURVE4, child_pos)]
-    codes, verts = zip(*path_data)
-    ax1.add_patch(mpatches.PathPatch(Path(verts, codes), facecolor='none', edgecolor=child_color, lw=2.2, alpha=0.5, zorder=1))
+tree_indices = []
 
+# A. TREE VIEW: Parent Connectors & Hybrid Curves
 for name, row in horse_db.items():
-    if row["Parent1"] in pos and row["Parent2"] in pos:
-        draw_hybrid_curves(row["Parent1"], row["Parent2"], name)
+    p1_n, p2_n = row["Parent1"], row["Parent2"]
+    if p1_n in pos and p2_n in pos:
+        p1, p2, child = pos[p1_n], pos[p2_n], pos[name]
+        
+        # Light Gray Horizontal Parent Line (Restored)
+        fig.add_trace(go.Scatter(x=[p1[0], p2[0]], y=[p1[1], p2[1]], mode='lines', 
+                                 line=dict(color="rgba(200,200,200,0.2)", width=1), hoverinfo='skip', showlegend=False))
+        tree_indices.append(len(fig.data)-1)
 
+        # Hybrid Curved Connection
+        mid_x, mid_y = (p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2
+        t = np.linspace(0, 1, 15)
+        curve_x = (1-t)**3 * mid_x + 3*(1-t)**2*t * mid_x + 3*(1-t)*t**2 * child[0] + t**3 * child[0]
+        curve_y = (1-t)**3 * mid_y + 3*(1-t)**2*t * (mid_y - 4) + 3*(1-t)*t**2 * (child[1] + 4) + t**3 * child[1]
+        fig.add_trace(go.Scatter(x=curve_x, y=curve_y, mode='lines', 
+                                 line=dict(color=data_registry[name]["color"], width=2), opacity=0.5, hoverinfo='skip', showlegend=False))
+        tree_indices.append(len(fig.data)-1)
+
+# Nodes & Labels (Unified Labels)
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
-    color = h_data["color"]
-    sorted_dna = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
-    dom_blood, purity = sorted_dna[0]
     is_dead = horse_db[name].get("Status") == "Dead"
+    sorted_dna = sorted(h_data["dna"].items(), key=lambda x: x[1], reverse=True)
+    dom_blood = sorted_dna[0][0]
     
-    if name == god_horse:
-        for i in range(1, 6): ax1.scatter(x, y, s=5500 + (i*1600), color=color, alpha=0.15/i, zorder=2)
+    label_text = f"<b>{name.upper()}</b><br>{int(sorted_dna[0][1]*100)}% {dom_blood}<br>S:{horse_db[name]['Speed']} F:{h_data['f']*100:.1f}%"
     
-    ax1.scatter(x, y, s=6200, color='#000000' if is_dead else color, edgecolors=color, linewidth=3.5, zorder=3)
-    
-    rgb = mcolors.to_rgb(color)
-    brightness = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000
-    txt_c = "white" if (is_dead or brightness < 0.5) else "black"
-    
-    label = (f"{'★ ' if name==god_horse else ''}{name.upper()}\n"
-             f"{int(purity*100)}% {dom_blood}\n"
-             f"F: {h_data['f']*100:.1f}%\n" 
-             f"SPD: {horse_db[name]['Speed']}")
-    
-    ax1.text(x, y, label, ha="center", va="center", color=txt_c, fontsize=7, fontweight='bold', zorder=4)
+    fig.add_trace(go.Scatter(
+        x=[x], y=[y], mode='markers+text',
+        text=[name.upper() if name != god_horse else f"★ {name.upper()}"],
+        textposition="bottom center",
+        textfont=dict(size=7, color="rgba(255,255,255,0.7)"),
+        marker=dict(
+            size=22 if name == god_horse else 12,
+            color='black' if is_dead else h_data["color"],
+            line=dict(width=2, color=h_data["color"]),
+            symbol="star" if name == god_horse else "circle"
+        ),
+        hovertext=label_text,
+        showlegend=False
+    ))
+    tree_indices.append(len(fig.data)-1)
 
-# RESTORED CLEAN LEGENDS
-blood_handles = [mpatches.Patch(color=c, label=b) for b, c in origin_colors.items() if b != "Unknown"]
-fig1.legend(handles=blood_handles, title="ORIGIN BLOODLINES", loc="upper center", 
-            bbox_to_anchor=(0.5, 0.96), ncol=len(blood_handles), facecolor='#111111', 
-            labelcolor="white", framealpha=0.9, fontsize=12)
+# B. DASHBOARD: Inbreeding Bar Chart & Trend
+dash_indices = []
 
-status_handles = [
-    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='#333333', markersize=15, label='Status: Alive', markeredgecolor='white'),
-    plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='black', markersize=15, label='Status: Dead', markeredgecolor='gray')
-]
-fig1.legend(handles=status_handles, title="LIFECYCLE STATUS", loc="upper right", 
-           bbox_to_anchor=(0.98, 0.96), facecolor='#111111', labelcolor="white", framealpha=0.9)
-
-ax1.axis('off')
-
-# =====================================================
-# 5. FIGURE 2: STATS DASHBOARD (RESTORED TOP 16)
-# =====================================================
-fig2 = plt.figure(figsize=(28, 14), facecolor='#050505')
-
-# A. Speed Trend
-ax_trend = fig2.add_axes([0.05, 0.55, 0.38, 0.35]); ax_trend.set_facecolor('#0A0A0A')
-gens = sorted(generation_groups.keys())
-avgs = [np.mean([float(horse_db[n]['Speed'] or 0) for n in generation_groups[g]]) for g in gens]
-ax_trend.plot(gens, avgs, color='#FFD700', marker='o', lw=4, label="Gen Avg Speed")
-ax_trend.set_title("EVOLUTIONARY SPEED TREND", color="white", fontsize=16, fontweight='bold')
-ax_trend.tick_params(colors='white'); ax_trend.grid(True, color='#333333', ls=':', alpha=0.5)
-
-# B. DNA Pie
-ax_pie = fig2.add_axes([0.05, 0.05, 0.38, 0.40]); ax_pie.set_facecolor('#050505')
-pie_labels = sorted(aggregate_dna.keys())
-ax_pie.pie([aggregate_dna[l] for l in pie_labels], labels=pie_labels, colors=[origin_colors.get(l, "#444444") for l in pie_labels], 
-           autopct='%1.1f%%', textprops=dict(color="white", fontweight='bold'))
-ax_pie.set_title("TOP 16 DNA FOOTPRINT", color="white", fontsize=16, fontweight='bold')
-
-# C. INBREEDING COMPARISON
+# Global Inbreeding Analysis (Horizontal Bar)
 avg_f = np.mean([d['f'] for d in data_registry.values()])
 god_f = data_registry[god_horse]['f'] if god_horse else 0
-ax_f = fig2.add_axes([0.46, 0.08, 0.48, 0.12]); ax_f.set_facecolor('#0A0A0A')
-bars = ax_f.barh(["Global Avg Inbreeding", f"Fastest ({god_horse})"], [avg_f, god_f], color=['#888888', '#FFD700'])
-ax_f.axvline(0.125, color='#FF3333', ls='--', alpha=0.6, lw=2)
-ax_f.set_title("INBREEDING COEFFICIENT (F) ANALYSIS", color="white", fontsize=14, fontweight='bold', loc='left')
-ax_f.set_xlim(0, max(0.25, god_f + 0.05)); ax_f.tick_params(colors='white')
-for bar in bars:
-    ax_f.text(bar.get_width() + 0.002, bar.get_y() + 0.3, f'{bar.get_width()*100:.2f}%', color='white', fontweight='bold')
+fig.add_trace(go.Bar(
+    y=["Global Avg", f"Fastest ({god_horse})"], x=[avg_f, god_f],
+    orientation='h', marker=dict(color=['#888', '#FFD700']),
+    visible=False, xaxis='x2', yaxis='y2', name="Inbreeding (F)"
+))
+dash_indices.append(len(fig.data)-1)
 
-decoder_text = "F-VALUE DECODER: 0% : Diverse | 6.25% : Cousins | 12.5% : High Risk | 25% : Extreme"
-fig2.text(0.46, 0.04, decoder_text, fontsize=10, family='monospace', color="#AAAAAA", 
-          bbox=dict(boxstyle="round,pad=0.5", fc="#111111", ec="#444444", alpha=0.8))
+# Speed Trend (Scattered over Generations)
+gens = sorted(generation_groups.keys())
+avgs = [np.mean([float(horse_db[n]['Speed'] or 0) for n in generation_groups[g]]) for g in gens]
+fig.add_trace(go.Scatter(
+    x=gens, y=avgs, mode='lines+markers', line=dict(color='gold', width=4),
+    visible=False, xaxis='x3', yaxis='y3', name="Avg Speed Trend"
+))
+dash_indices.append(len(fig.data)-1)
 
-# D. TOP 16 TABLE (With Full 5 Bloodlines)
-lead_txt = "👑 TOP 16 FASTEST HORSES (ALIVE) 👑\n" + "═"*145 + "\n"
-lead_txt += f"{'RANK':<5} {'HORSE NAME':<18} {'SPD':<6} {'F-SCORE':<10} | {'DNA COMPOSITION (Primary ➔ 5th)':<85}\n"
-lead_txt += "═"*145 + "\n"
-
+# C. LEADERBOARD TABLE (Detailed Top 16)
+table_data = []
 for i, name in enumerate(top_16, 1):
-    f_val = f"{data_registry[name]['f']*100:.1f}%"
     dna_list = sorted(data_registry[name]["dna"].items(), key=lambda x: x[1], reverse=True)
-    slots = [f"{int(dna_list[j][1]*100)}% {dna_list[j][0]}" if j < len(dna_list) else "---" for j in range(5)]
-    lead_txt += f"{i:<5} {name:.<18} {horse_db[name]['Speed']:<6} {f_val:<10} | {' | '.join(slots)}\n"
+    composition = " | ".join([f"{int(v*100)}% {k}" for k, v in dna_list[:3]])
+    table_data.append([i, name, horse_db[name]['Speed'], f"{data_registry[name]['f']*100:.1f}%", composition])
 
-fig2.text(0.46, 0.92, lead_txt, fontsize=9, family='monospace', color="white", 
-          bbox=dict(boxstyle="round,pad=1.5", fc="#0A0A0A", ec="#FFD700", alpha=0.95, lw=2), va='top', linespacing=1.8)
+table_trace = go.Table(
+    header=dict(values=['RANK', 'NAME', 'SPD', 'F-SCORE', 'TOP DNA'], fill_color='#1a1a1a', align='left', font=dict(color='white')),
+    cells=dict(values=list(zip(*table_data)), fill_color='#050505', align='left', font=dict(color='white')),
+    visible=False
+)
+fig.add_trace(table_trace)
+table_index = len(fig.data) - 1
 
-plt.show()
+# =====================================================
+# 4. FINAL LAYOUT & TOGGLE SWITCHES
+# =====================================================
+total_traces = len(fig.data)
+tree_visible = [False] * total_traces
+for i in tree_indices: tree_visible[i] = True
+
+dash_visible = [False] * total_traces
+for i in dash_indices: dash_visible[i] = True
+
+table_visible = [False] * total_traces
+table_visible[table_index] = True
+
+fig.update_layout(
+    updatemenus=[dict(
+        type="dropdown", direction="down", x=0.01, y=0.99, showactive=True,
+        buttons=[
+            dict(label="Family Tree View", method="update", 
+                 args=[{"visible": tree_visible}, {"xaxis.visible": False, "yaxis.visible": False, "xaxis2.visible": False, "yaxis2.visible": False, "xaxis3.visible": False, "yaxis3.visible": False}]),
+            dict(label="Stats Dashboard", method="update", 
+                 args=[{"visible": dash_visible}, {"xaxis2.visible": True, "yaxis2.visible": True, "xaxis3.visible": True, "yaxis3.visible": True, "xaxis.visible": False, "yaxis.visible": False}]),
+            dict(label="Leaderboard Table", method="update", 
+                 args=[{"visible": table_visible}, {"xaxis.visible": False, "yaxis.visible": False, "xaxis2.visible": False, "yaxis2.visible": False, "xaxis3.visible": False, "yaxis3.visible": False}])
+        ],
+        bgcolor="#111", font=dict(color="white")
+    )],
+    template="plotly_dark", paper_bgcolor='#050505', plot_bgcolor='#050505',
+    # Dashboard Grid
+    xaxis2=dict(domain=[0.05, 0.45], anchor='y2', visible=False, title="Inbreeding Coeff"),
+    yaxis2=dict(domain=[0.6, 0.9], anchor='x2', visible=False),
+    xaxis3=dict(domain=[0.55, 0.95], anchor='y3', visible=False, title="Generation"),
+    yaxis3=dict(domain=[0.6, 0.9], anchor='x3', visible=False, title="Avg Speed"),
+    margin=dict(t=50, b=50, l=50, r=50)
+)
+
+fig.write_html("index.html", config={'scrollZoom': True})
+print("Build Successful: Interactive Dynasty Tree & Analytics integrated.")
