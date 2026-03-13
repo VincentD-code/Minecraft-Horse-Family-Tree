@@ -580,34 +580,5 @@ window.addEventListener('load', function() {{
 </script>
 """
 
-# =====================================================
-# 5. FINAL ASSEMBLY & EXPORT
-# =====================================================
-# Get the raw div and script from Plotly instead of a full HTML page
-main_plot_html = fig.to_html(full_html=False, include_plotlyjs='cdn', config={'scrollZoom': True})
-
-# Combine everything into one clean template
-final_html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Horse Pedigree Pro</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    {ui_html}
-</head>
-<body style="margin:0; padding:0; background-color:#050505;">
-    
-    <div id="main-tree-container">
-        {main_plot_html}
-    </div>
-
-    {js_script}
-
-</body>
-</html>
-"""
-
 with open("index.html", "w", encoding="utf-8") as f:
-    f.write(final_html)
-
-print("Successfully generated index.html")
+    f.write(html_content.replace('</body>', js_script + '</body>'))
