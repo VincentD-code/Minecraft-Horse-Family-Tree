@@ -7,7 +7,7 @@ def decode_variant(variant_id):
               4: "Black", 5: "Gray", 6: "Dark Brown"}
     # Minecraft Pattern mapping (ID // 256)
     patterns = {0: "None", 1: "White Stockings/Blaze", 2: "White Patches", 
-                3: "Rusty Spots", 4: "Black Dots"}
+                3: "White Dots", 4: "Black Dots"}
     
     color_id = variant_id % 256
     pattern_id = variant_id // 256
@@ -31,13 +31,13 @@ def get_horse_stats(nbt_data):
     return [
         f"{speed_bps:.2f}",
         f"{jump_blocks:.2f}",
-        f"{hp_raw / 2:.1f}",
+        f"{hp_raw:.1f}",
         decode_variant(variant_id)
     ]
 
 # Paste your horse data here
-data = """/summon minecraft:horse 332.29 64.00 13.89 {Brain: {memories: {}}, HurtByTimestamp: 0, Tame: 1b, Owner: [I; -2040289864, 893862429, -1177463808, -374089761], Invulnerable: 0b, FallFlying: 0b, ForcedAge: 0, PortalCooldown: 0, AbsorptionAmount: 0.0f, Bred: 0b, FallDistance: 0.0f, InLove: 0, EatingHaystack: 0b, DeathTime: 0s, HandDropChances: [0.085f, 0.085f], PersistenceRequired: 0b, Age: 0, Motion: [0.0d, -0.0784000015258789d, 0.0d], Health: 22.184505f, LeftHanded: 0b, Air: 300s, OnGround: 1b, Rotation: [-86.27014f, 0.0f], HandItems: [{}, {}], Variant: 769, ArmorDropChances: [0.085f, 0.085f, 0.085f, 0.085f], Fire: -1s, ArmorItems: [{}, {}, {}, {}], Temper: 20, CanPickUpLoot: 0b, attributes: [{id: "minecraft:generic.movement_speed", base: 0.24384865781132986d}, {id: "minecraft:generic.jump_strength", base: 0.6984335273115362d}, {id: "minecraft:generic.oxygen_bonus", base: 0.0d}, {id: "minecraft:generic.max_health", base: 22.184505162967504d}], HurtTime: 0s}"""
+data = """/summon minecraft:horse 353.04 65.00 20.45 {Brain: {memories: {}}, HurtByTimestamp: 0, Tame: 1b, Owner: [I; -2040289864, 893862429, -1177463808, -374089761], Invulnerable: 0b, FallFlying: 0b, ForcedAge: 0, PortalCooldown: 0, AbsorptionAmount: 0.0f, Bred: 0b, FallDistance: 0.0f, InLove: 0, EatingHaystack: 0b, DeathTime: 0s, HandDropChances: [0.085f, 0.085f], PersistenceRequired: 0b, Age: 0, Motion: [0.0d, -0.0784000015258789d, 0.0d], Health: 25.033106f, LeftHanded: 0b, Air: 300s, OnGround: 1b, Rotation: [265.66467f, 0.0f], HandItems: [{}, {}], Variant: 516, ArmorDropChances: [0.085f, 0.085f, 0.085f, 0.085f], Fire: -1s, ArmorItems: [{}, {}, {}, {}], Temper: 50, CanPickUpLoot: 0b, attributes: [{id: "minecraft:generic.jump_strength", base: 0.8276104980036473d}, {id: "minecraft:generic.max_health", base: 25.03310503285247d}, {id: "minecraft:generic.movement_speed", base: 0.2966470171110437d}, {id: "minecraft:generic.oxygen_bonus", base: 0.0d}], HurtTime: 0s}"""
 
 stats = get_horse_stats(data)
-print("Speed (bps)\tJump (Blocks)\tHearts\tAppearance")
+print("Speed (bps)\tJump (Blocks)\tHealth\tAppearance")
 print("\t".join(stats))
