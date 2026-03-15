@@ -1,71 +1,71 @@
-id,Name,Parent1,Parent2,Status,OriginBlood,Generation,Speed,Jump,Health,Appearance
-1,Speedy,,,Alive,Star Strider,,12.06,4.75,24.00,Black w/ White Spots
-2,Blondy,,,Dead,Celestial Grass,,11.88,2.15,27.00,Chestnut w/ White Patches
-3,Whitty I,,,Dead,Thunder Blood,,11.02,2.20,25.00,White w/ White Spots
-4,Spotty,,,Dead,Thunder Blood,,11.01,3.78,24.00,Dark Brown w/ White Spots
-5,Camemille,,,Dead,Frostmane,,10.85,2.58,22.00,Creamy w/ None
-6,White V,,,Dead,Frostmane,,10.53,2.53,21.00,White w/ None
-7,Pure,,,Dead,Emberhoof,,10.44,1.58,25.00,Dark Brown w/ None
-8,Scorchback,,,Dead,Emberhoof,,10.21,3.14,24.00,Creamy w/ Black Dots
-9,Snail,,,Dead,Slothsoul,,5.73,3.23,22.00,Chestnut w/ White Spots
-10,Gray,,,Dead,Slothsoul,,7.78,3.82,25.00,Gray w/ White Spots
-11,Whitty II,Spotty,Whitty I,Dead,MIXED_SPECIAL,,11.63,2.15,27.00,White w/ White Spots
-12,Cruiser,Speedy,Blondy,Alive,,,11.95,3.68,24.70,Dark Brown w/ White Patches
-13,Stripe,Pure,Scorchback,Dead,,,11.06,2.54,23.80,Creamy w/ None
-14,Blackback,Snail,Gray,Dead,,,5.61,3.31,23.20,Gray w/ Black Spots
-15,White Face,Camemille,White V,Dead,,,9.86,2.67,21.80,Creamy w/ None
-16,Scorchback II,Blondy,Whitty II,Dead,,,11.78,2.40,25.50,Creamy w/ Black Dots
-17,Speedy II,Speedy,Cruiser,Dead,,,11.28,3.77,23.70,Black w/ White Dots
-18,Camspot,Stripe,Whitty I,Dead,,,11.22,2.54,23.80,Creamy w/ White Dots
-19,Spotty II,Spotty,Camemille,Dead,,,10.95,3.08,22.80,Dark Brown w/ White Spots
-20,Pure Spots,White V,Pure,Dead,,,10.28,2.33,22.80,Dark Brow w/ White Spots
-21,White VI,White V,Pure,Dead,,,10.11,2.33,22.80,White w/ None
-22,Gray II,Snail,Blackback,Dead,,,5.54,3.14,22.60,Gray w/ White Stockings/Blaze
-23,White VII,Pure,White V,Dead,,,10.02,2.33,22.80,White w/ None
-24,Camspot II,Camemille,Spotty II,Dead,,,10.28,2.88,22.20,Creamy w/ Rusty Spots
-25,White VIII,Spotty,Whitty I,Dead,,,11.34,2.96,23.80,Creamy w/ White Dots
-26,Camemille II,Stripe,Camspot,Dead,,,11.32,2.66,23.40,Creamy w/  None
-27,White IX,Speedy II,Whitty II,Dead,,,10.37,2.94,24.40,White w/ White Spots
-28,Scorchback III,Scorchback II,Blondy,Dead,,,11.54,2.48,25.00,Creamy w/ Black Dots
-29,Spooky,Cruiser,Speedy,Dead,,,11.93,,,Black w/ White Patches
-30,Blackback II,Gray II,Blackback,Dead,,,5.85,,,Gray w/ Black Spots
-31,Spotty III,Spotty II ,Camemille ,Dead,,,10.77,,,Dark Brown w/ White Spots
-32,Camemille III,Spotty II ,Camemille ,Dead,,,10.15,,,Creamy w/ None
-33,Pure II,Spotty II ,Camemille,Dead,,,10.61,,,Dark Brown w/ None
-34,Blotty,Whitty I,Spotty,Dead,,,10.79,,,Dark Brown w/ White Spots
-35,Stripe II,Stripe,Camspot,Alive,,,11.99,2.18,25.20,Creamy w/ None
-36,Camspot III,Speedy II ,Camemille II,Dead,,,11.15,,,Creamy w/ White Dots
-37,Mirage,White VIII,Scorchback III,Dead,,,11.60,,,White w/ Black Dots
-38,Mirage II,Whitty II,Scorchback II,Alive,,,12.17,3.23,28.00,White w/ Black Dots
-39,Blondy II,Blondy,Spooky,Dead,,,11.50,,,Chestnut w/ White Patches
-40,Cruiser II,Cruiser,Speedy,Alive,,,12.58,4.87,23.80,Black w/ White Dots
-41,Gray III,Gray II,Blackback,Alive,,,4.97,2.69,21.70,Gray w/ White Stockings/Blaze
-42,Camemille IV,Spotty II ,Camemille,Dead,,,10.52,3.60,22.40,Creamy w/ None
-43,Camemille V,Spotty II ,Camemille,Dead,,,11.37,,,Creamy w/ None
-44,Camemille VI,Speedy II,Camemille II,Dead,,,10.98,,,Creamy w/ None
-45,Camspot IV,White VIII,Camemille V,Dead,,,11.94,,,Creamy w/ White Dots
-46,Blondy III,Blondy II,Scorchback III,Dead,,,11.52,,,Chestnut w/ White Patches
-47,Mirage III,Mirage,Whitty II,Dead,,,11.36,,,White w/ Black Dots
-48,White Socks I,Scorchback II,Blondy,Alive,,,12.33,1.67,27.00,Chestnut w/ White Stockings/Blaze
-49,Cruiser III,Spooky,Cruiser,Dead,,,11.14,,,Dark Brown w/ White Patches
-50,Shadow,Stripe II,Speedy,Alive,,,12.11,2.68,24.90,Black w/ None
-51,Brownscorch,Mirage II,Cruiser II,Alive,,,12.57,4.23,26.60,Brown w/ Black Dots
-52,Gray IV,Gray II,Gray III,Dead,,,5.64,,,Gray w/ White Stockings/Blaze
-53,Blondy IV,Blondy III,Scorchback III,Dead,,,11.26,,,Chestnut w/ White Patches
-54,Whitty X,Mirage,Whitty II,Dead,,,10.97,,,White w/ White Spots
-55,Light,Scorchback II,Blondy,Dead,,,11.89,,,White w/ None
-56,Camspot V,Spooky,Camspot IV,Alive,,,12.17,4.09,24.80,Creamy w/ White Dots
-57,Cruiser IV,Cruiser,Stripe II,Dead,,,11.69,,,Dark Brown w/ White Patches
-58,Speedy III,Speedy,Shadow,Alive,,,11.98,3.90,25.20,Black w/ White Dots
-59,White Socks II,Mirage II,White Socks I,Alive,,,12.78,2.39,26.10,Chestnut w/ White Stockings/Blaze
-60,Brownspot I,Brownscorch,Cruiser II,Alive,,,12.50,4.03,24.50,Brown w/ White Dots
-61,Gray V,Gray II,Gray III,Alive,,,5.03,2.58,21.10,Gray w/ White Stockings/Blaze
-62,Blondy V,Blondy,Light,Dead,,,11.46,2.29,27.00,Chestnut w/ White Patches
-63,Spooky II,Spooky,Camspot IV,Dead,,,11.51,,,Black w/ White Patches
-64,Spooky III,Cruiser,Speedy III,Alive,,,12.51,3.84,25.00,Black w/ White Patches
-65,Speedy IV,Stripe II,Speedy,Dead,,,11.84,,,Black w/ White Spots
-66,Grayspot I,Shadow,Camspot V,Dead,,,11.41,,,Gray w/ White Dots
-67,Light II,Mirage II,White Socks I,Alive,,,12.21,2.09,27.70,White w/ White Stockings/Blaze
-68,Brownspot III,Brownspot I,Brownscorch ,Alive,,,12.14,3.87,25.70,Brown w/ White Dots
-69,Scorchback IV,Cruiser II,White Socks II,Alive,,,12.55,3.28,27.80,Chestnut w/ Black Dots
-70,Gray VI,Gray IV,Gray III,Dead,,,5.20,,,Gray w/ White Stockings/Blaze
+id,Name,parent id 1,parent id 2,Parent1,Parent2,Status,OriginBlood,Generation,Speed,Jump,Health,Appearance
+1,Speedy,,,,,Alive,Star Strider,,12.06,4.75,24.00,Black w/ White Spots
+2,Blondy,,,,,Dead,Celestial Grass,,11.88,2.15,27.00,Chestnut w/ White Patches
+3,Whitty I,,,,,Dead,Thunder Blood,,11.02,2.20,25.00,White w/ White Spots
+4,Spotty,,,,,Dead,Thunder Blood,,11.01,3.78,24.00,Dark Brown w/ White Spots
+5,Camemille,,,,,Dead,Frostmane,,10.85,2.58,22.00,Creamy w/ None
+6,White V,,,,,Dead,Frostmane,,10.53,2.53,21.00,White w/ None
+7,Pure,,,,,Dead,Emberhoof,,10.44,1.58,25.00,Dark Brown w/ None
+8,Scorchback,,,,,Dead,Emberhoof,,10.21,3.14,24.00,Creamy w/ Black Dots
+9,Snail,,,,,Dead,Slothsoul,,5.73,3.23,22.00,Chestnut w/ White Spots
+10,Gray,,,,,Dead,Slothsoul,,7.78,3.82,25.00,Gray w/ White Spots
+11,Whitty II,4,3,Spotty,Whitty I,Dead,MIXED_SPECIAL,,11.63,2.15,27.00,White w/ White Spots
+12,Cruiser,1,2,Speedy,Blondy,Alive,,,11.95,3.68,24.70,Dark Brown w/ White Patches
+13,Stripe,7,8,Pure,Scorchback,Dead,,,11.06,2.54,23.80,Creamy w/ None
+14,Blackback,9,10,Snail,Gray,Dead,,,5.61,3.31,23.20,Gray w/ Black Spots
+15,White Face,5,6,Camemille,White V,Dead,,,9.86,2.67,21.80,Creamy w/ None
+16,Scorchback II,2,11,Blondy,Whitty II,Dead,,,11.78,2.40,25.50,Creamy w/ Black Dots
+17,Speedy II,1,12,Speedy,Cruiser,Dead,,,11.28,3.77,23.70,Black w/ White Dots
+18,Camspot,13,3,Stripe,Whitty I,Dead,,,11.22,2.54,23.80,Creamy w/ White Dots
+19,Spotty II,4,5,Spotty,Camemille,Dead,,,10.95,3.08,22.80,Dark Brown w/ White Spots
+20,Pure Spots,6,7,White V,Pure,Dead,,,10.28,2.33,22.80,Dark Brow w/ White Spots
+21,White VI,6,7,White V,Pure,Dead,,,10.11,2.33,22.80,White w/ None
+22,Gray II,9,14,Snail,Blackback,Dead,,,5.54,3.14,22.60,Gray w/ White Stockings/Blaze
+23,White VII,7,6,Pure,White V,Dead,,,10.02,2.33,22.80,White w/ None
+24,Camspot II,5,19,Camemille,Spotty II,Dead,,,10.28,2.88,22.20,Creamy w/ Rusty Spots
+25,White VIII,4,3,Spotty,Whitty I,Dead,,,11.34,2.96,23.80,Creamy w/ White Dots
+26,Camemille II,13,18,Stripe,Camspot,Dead,,,11.32,2.66,23.40,Creamy w/  None
+27,White IX,17,11,Speedy II,Whitty II,Dead,,,10.37,2.94,24.40,White w/ White Spots
+28,Scorchback III,16,2,Scorchback II,Blondy,Dead,,,11.54,2.48,25.00,Creamy w/ Black Dots
+29,Spooky,12,1,Cruiser,Speedy,Dead,,,11.93,3.77,23.70,Black w/ White Patches
+30,Blackback II,22,14,Gray II,Blackback,Dead,,,5.85,3.11,22.80,Gray w/ Black Spots
+31,Spotty III,19,5,Spotty II ,Camemille ,Dead,,,10.77,2.85,22.40,Dark Brown w/ White Spots
+32,Camemille III,19,5,Spotty II ,Camemille ,Dead,,,10.15,2.85,22.40,Creamy w/ None
+33,Pure II,19,5,Spotty II ,Camemille,Dead,,,10.61,2.85,22.40,Dark Brown w/ None
+34,Blotty,3,4,Whitty I,Spotty,Dead,,,10.79,2.96,23.80,Dark Brown w/ White Spots
+35,Stripe II,13,18,Stripe,Camspot,Alive,,,11.99,2.18,25.20,Creamy w/ None
+36,Camspot III,17,26,Speedy II ,Camemille II,Dead,,,11.15,3.11,23.20,Creamy w/ White Dots
+37,Mirage,25,28,White VIII,Scorchback III,Dead,,,11.60,2.78,23.80,White w/ Black Dots
+38,Mirage II,11,16,Whitty II,Scorchback II,Alive,,,12.17,3.23,28.00,White w/ Black Dots
+39,Blondy II,2,29,Blondy,Spooky,Dead,,,11.50,2.94,24.40,Chestnut w/ White Patches
+40,Cruiser II,12,1,Cruiser,Speedy,Alive,,,12.58,4.87,23.80,Black w/ White Dots
+41,Gray III,22,14,Gray II,Blackback,Alive,,,4.97,2.69,21.70,Gray w/ White Stockings/Blaze
+42,Camemille IV,19,5,Spotty II ,Camemille,Dead,,,10.52,3.60,22.40,Creamy w/ None
+43,Camemille V,19,5,Spotty II ,Camemille,Dead,,,11.37,2.85,22.40,Creamy w/ None
+44,Camemille VI,17,26,Speedy II,Camemille II,Dead,,,10.98,3.11,23.20,Creamy w/ None
+45,Camspot IV,25,43,White VIII,Camemille V,Dead,,,11.94,2.90,22.90,Creamy w/ White Dots
+46,Blondy III,39,28,Blondy II,Scorchback III,Dead,,,11.52,2.77,24.00,Chestnut w/ White Patches
+47,Mirage III,37,11,Mirage,Whitty II,Dead,,,11.36,2.61,24.40,White w/ Black Dots
+48,White Socks I,16,2,Scorchback II,Blondy,Alive,,,12.33,1.67,27.00,Chestnut w/ White Stockings/Blaze
+49,Cruiser III,29,12,Spooky,Cruiser,Dead,,,11.14,3.45,23.60,Dark Brown w/ White Patches
+50,Shadow,35,1,Stripe II,Speedy,Alive,,,12.11,2.68,24.90,Black w/ None
+51,Brownscorch,38,40,Mirage II,Cruiser II,Alive,,,12.57,4.23,26.60,Brown w/ Black Dots
+52,Gray IV,22,41,Gray II,Gray III,Dead,,,5.64,2.91,22.20,Gray w/ White Stockings/Blaze
+53,Blondy IV,46,28,Blondy III,Scorchback III,Dead,,,11.26,2.71,23.80,Chestnut w/ White Patches
+54,Whitty X,37,11,Mirage,Whitty II,Dead,,,10.97,2.61,24.40,White w/ White Spots
+55,Light,16,2,Scorchback II,Blondy,Dead,,,11.89,2.48,25.00,White w/ None
+56,Camspot V,29,45,Spooky,Camspot IV,Alive,,,12.17,4.09,24.80,Creamy w/ White Dots
+57,Cruiser IV,12,35,Cruiser,Stripe II,Dead,,,11.69,2.92,24.13,Dark Brown w/ White Patches
+58,Speedy III,1,50,Speedy,Shadow,Alive,,,11.98,3.90,25.20,Black w/ White Dots
+59,White Socks II,38,48,Mirage II,White Socks I,Alive,,,12.78,2.39,26.10,Chestnut w/ White Stockings/Blaze
+60,Brownspot I,51,40,Brownscorch,Cruiser II,Alive,,,12.50,4.03,24.50,Brown w/ White Dots
+61,Gray V,22,41,Gray II,Gray III,Alive,,,5.03,2.58,21.10,Gray w/ White Stockings/Blaze
+62,Blondy V,2,55,Blondy,Light,Dead,,,11.46,2.29,27.00,Chestnut w/ White Patches
+63,Spooky II,29,45,Spooky,Camspot IV,Dead,,,11.51,3.19,23.00,Black w/ White Patches
+64,Spooky III,12,58,Cruiser,Speedy III,Alive,,,12.51,3.84,25.00,Black w/ White Patches
+65,Speedy IV,35,1,Stripe II,Speedy,Dead,,,11.84,3.27,23.90,Black w/ White Spots
+66,Grayspot I,50,56,Shadow,Camspot V,Dead,,,11.41,3.22,24.10,Gray w/ White Dots
+67,Light II,38,48,Mirage II,White Socks I,Alive,,,12.21,2.09,27.70,White w/ White Stockings/Blaze
+68,Brownspot III,60,51,Brownspot I,Brownscorch ,Alive,,,12.14,3.87,25.70,Brown w/ White Dots
+69,Scorchback IV,40,59,Cruiser II,White Socks II,Alive,,,12.55,3.28,27.80,Chestnut w/ Black Dots
+70,Gray VI,52,41,Gray IV,Gray III,Dead,,,5.20,2.83,22.10,Gray w/ White Stockings/Blaze
