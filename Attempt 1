@@ -192,24 +192,15 @@ for name, row in horse_db.items():
             name="line_child"
         ))
 
-# 1. Identify top horses for each category to use in the logic below
-top_speed = df[df['Status'] != 'Dead'].nlargest(3, 'Speed')['Name'].tolist()
-top_jump = df[df['Status'] != 'Dead'].nlargest(3, 'Jump')['Name'].tolist()
-top_health = df[df['Status'] != 'Dead'].nlargest(3, 'Health')['Name'].tolist()
-
-# Define default styles
+top_three = df.nlargest(3, 'Speed')['Name'].tolist()
 rank_colors = {0: "#FFD700", 1: "#C0C0C0", 2: "#CD7F32"}
 rank_shapes = {0: "star", 1: "diamond", 2: "triangle-up"}
 
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
     row = horse_db[name]
-    is_dead = row.get("Status") == "Dead"
-    
-    # We initialize with Speed as the default rank
-    rank = top_speed.index(name) if name in top_speed else None
-    is_god = (rank == 0)
-    
+    rank = top_three.index(name) if name in top_three else None
+    is_god, is_dead = (rank == 0), row.get("Status") == "Dead"
     node_fill = "#050505" if is_dead else h_data["color"]
     line_width = 4 if rank is not None else 1.5
     display_name = f"★ GOD HORSE: {name.upper()} ★" if is_god else name.upper()
@@ -219,6 +210,7 @@ for name, (x, y) in pos.items():
     p1, p2 = row.get("Parent1"), row.get("Parent2")
     parent_info = f"Parents: {p1} & {p2}<br>Roll Luck: {h_data['mutation']:.2f}" if p1 and p2 else f"Origin: {row.get('OriginBlood', 'Unknown')}"
 
+    # Handling Generation properly
     gen_val = int(row['Generation']) if (row.get('Generation') != "" and not isinstance(row.get('Generation'), str)) else h_data['level']
     appearance_val = row.get("Appearance") if row.get("Appearance") else "Standard"
     hp = float(row.get('Health', 0))
@@ -237,28 +229,17 @@ for name, (x, y) in pos.items():
         f"<b>DNA Breakdown:</b><br>{dna_str}"
     )
 
-    # GLOW TRACE (Neutralized for JS to take over)
-    # We pass the horse name in customdata so JS knows which ones to 'glow'
-    fig.add_trace(go.Scatter(
-        x=[x], y=[y], mode='markers',
-        marker=dict(
-            size=55 if rank == 0 else (45 if rank is not None else 0), 
-            color=rank_colors.get(rank, "rgba(0,0,0,0)"), 
-            opacity=0.25 if rank is not None else 0
-        ),
-        hoverinfo='skip', showlegend=False, name="glow", customdata=[name]
-    ))
+    if rank is not None and rank <= 2:
+        fig.add_trace(go.Scatter(
+            x=[x], y=[y], mode='markers',
+            marker=dict(size=55 if is_god else 45, color=rank_colors[rank], opacity=0.25),
+            hoverinfo='skip', showlegend=False, name="glow", customdata=[name]
+        ))
 
-    # NODE TRACE
-    # We pass 'rank' data via customdata so JS can change symbols on the fly
     fig.add_trace(go.Scatter(
         x=[x], y=[y], mode='markers+text', text=[display_name], textposition="bottom center",
-        marker=dict(
-            size=26 if rank is not None else 14, 
-            color=node_fill, 
-            symbol=rank_shapes.get(rank, "circle"),
-            line=dict(width=line_width, color=rank_colors.get(rank, h_data["color"]))
-        ),
+        marker=dict(size=26 if rank is not None else 14, color=node_fill, symbol=rank_shapes.get(rank, "circle"),
+                    line=dict(width=line_width, color=rank_colors.get(rank, h_data["color"]))),
         hovertext=hover_label, hoverinfo="text", customdata=[name], name="node"
     ))
 
@@ -270,22 +251,9 @@ fig.update_layout(
 )
 
 # =====================================================
-# 4. UPDATED BINDER UI DATA & JSON DUMPS
+# 4. BINDER UI DATA & JSON DUMPS
 # =====================================================
-# Pre-calculating all ranking sets
-def get_stat_rankings(stat_name):
-    # Top 16 for Binder (All horses)
-    t16 = df.nlargest(16, stat_name)[['Name', stat_name]].to_dict('records')
-    # Top 3 for Map Highlighting (Alive only)
-    t3_alive = df[df['Status'] != 'Dead'].nlargest(3, stat_name)['Name'].tolist()
-    return {"top_16": t16, "top_3": t3_alive}
-
-rankings = {
-    "speed": get_stat_rankings("Speed"),
-    "jump": get_stat_rankings("Jump"),
-    "health": get_stat_rankings("Health")
-}
-
+top_16_speed = df.nlargest(16, 'Speed')[['Name', 'Speed']].to_dict('records')
 gen_speeds = {}
 for name, data in data_registry.items():
     if horse_db[name].get("OriginBlood") == "Slothsoul": continue
@@ -305,8 +273,7 @@ def calculate_global_genetics(include_dead=True):
     return {k: round((v / total_sum) * 100, 1) for k, v in totals.items()} if total_sum > 0 else {}
 
 stats_json = json.dumps({
-    "rankings": rankings, 
-    "avg_speed": avg_speed_gen,
+    "top_16": top_16_speed, "avg_speed": avg_speed_gen,
     "blood_all": calculate_global_genetics(include_dead=True),
     "blood_alive": calculate_global_genetics(include_dead=False)
 })
@@ -351,7 +318,7 @@ ui_html = f"""
     /* HORIZONTAL SCROLLER FOR TAB 2 */
     .graph-scroll-container {{
         width: 100%;
-        overflow-x: auto;
+        overflow-x: auto; /* Enable horizontal slider */
         overflow-y: hidden;
         background: #1a1a1a;
         border-radius: 8px;
@@ -359,7 +326,7 @@ ui_html = f"""
         border: 1px solid #333;
     }}
     #gen-performance-chart {{
-        height: 400px;
+        height: 400px; /* Fixed height for the XY plot */
     }}
 
     table {{ width: 100%; border-collapse: collapse; }}
@@ -374,21 +341,11 @@ ui_html = f"""
     }}
     .minimize-btn:hover {{ color: #FF4500; background: rgba(255, 69, 0, 0.05); }}
     
-    /* UI MODES & STAT SWITCHER */
-    #mode-ui, #stat-ui {{
-        position:fixed; left:20px; z-index:9999; background:rgba(20,20,20,0.95); 
+    #mode-ui {{
+        position:fixed; top:20px; left:20px; z-index:9999; background:rgba(20,20,20,0.95); 
         padding:15px; border:1px solid #444; color:white; font-family:monospace; 
-        border-radius:8px; user-select:none;
+        border-radius:8px; cursor:pointer; user-select:none;
     }}
-    #mode-ui {{ top:20px; cursor:pointer; }}
-    #stat-ui {{ top:105px; }}
-    
-    .stat-btn {{
-        display:inline-block; padding:6px 10px; margin-right:5px; border:1px solid #444;
-        cursor:pointer; font-size:11px; transition: 0.2s; border-radius: 4px;
-    }}
-    .stat-btn:hover {{ background: #222; }}
-    .active-stat {{ background: #FFD700 !important; color: black !important; border-color: #FFD700 !important; font-weight: bold; }}
 
     .pie-container {{ height: 350px; width: 100%; margin-bottom: 40px; }}
 </style>
@@ -401,9 +358,9 @@ ui_html = f"""
     </div>
 
     <div id="page-0" class="binder-page active-page">
-        <div id="leaderboard-header" class="page-header">TOP 16 SPEEDS</div>
+        <div class="page-header">TOP 16 SPEEDS</div>
         <table>
-            <thead><tr><th>#</th><th>NAME</th><th id="stat-label">SPEED</th></tr></thead>
+            <thead><tr><th>#</th><th>NAME</th><th>SPEED</th></tr></thead>
             <tbody id="top-16-body"></tbody>
         </table>
         <div class="minimize-btn" onclick="toggleBinder()">[ MINIMIZE BINDER ]</div>
@@ -433,13 +390,6 @@ ui_html = f"""
     <div id="mode-text" style="color:#00F5FF; font-weight:bold; font-size:16px;">ANCESTORS</div>
     <div style="margin-top:5px; font-size:9px; color:#666;">CLICK TO TOGGLE | PRESS 'M'</div>
 </div>
-
-<div id="stat-ui">
-    <div style="margin-bottom:10px; font-weight:bold; color:#FFD700; font-size:13px;">RANKING MODE</div>
-    <div id="btn-speed" class="stat-btn active-stat" onclick="setStat('speed')">SPEED</div>
-    <div id="btn-jump" class="stat-btn" onclick="setStat('jump')">JUMP</div>
-    <div id="btn-health" class="stat-btn" onclick="setStat('health')">HEALTH</div>
-</div>
 """
 
 js_script = f"""
@@ -451,7 +401,6 @@ var stats = {stats_json};
 var bloodColors = {js_color_map};
 var currentMode = 'ancestors'; 
 var currentHighlighted = null;
-var currentStat = 'speed'; // New: tracking the active stat mode
 
 function toggleBinder() {{
     document.getElementById('binder-container').classList.toggle('active');
@@ -474,125 +423,79 @@ function openTab(index) {{
     }}, 50);
 }}
 
-// New: Stat Switcher Logic
-function setStat(stat) {{
-    currentStat = stat;
-    
-    // Update button styles
-    document.querySelectorAll('.stat-btn').forEach(b => b.classList.remove('active-stat'));
-    document.getElementById('btn-' + stat).classList.add('active-stat');
-    
-    // Update Binder UI labels
-    document.getElementById('leaderboard-header').innerText = "TOP 16 " + stat.toUpperCase();
-    document.getElementById('stat-label').innerText = stat.toUpperCase();
-    
-    renderLeaderboard();
-    updateMapHighlights();
-}}
-
-function renderLeaderboard() {{
-    const t16Body = document.getElementById('top-16-body');
-    t16Body.innerHTML = '';
-    const rankingData = stats.rankings[currentStat].top_16;
-    
-    rankingData.forEach((h, i) => {{
-        let row = document.createElement('tr');
-        // Get the actual value (it's the second key in the object)
-        let val = h[Object.keys(h)[1]].toFixed(2); 
-        row.innerHTML = `<td>${{i+1}}</td><td>${{h.Name}}</td><td style="color:#FFD700; font-weight:bold;">${{val}}</td>`;
-        row.onclick = () => {{ currentHighlighted = h.Name; highlightLogic(h.Name); }};
-        t16Body.appendChild(row);
-    }});
-}}
-
-// New: Dynamic Plotly Icon/Glow Updater
-function updateMapHighlights() {{
-    var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
-    if(!graphDiv) return;
-
-    const top3 = stats.rankings[currentStat].top_3;
-    const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"]; // Gold, Silver, Bronze
-    const rankShapes = ["star", "diamond", "triangle-up"];
-
-    var updateData = {{
-        'marker.color': [],
-        'marker.symbol': [],
-        'marker.size': [],
-        'opacity': [],
-        'marker.line.width': [],
-        'marker.line.color': []
-    }};
-    
-    var indices = [];
-
-    for(var i=0; i < graphDiv.data.length; i++) {{
-        var trace = graphDiv.data[i];
-        if (trace.name !== "glow" && trace.name !== "node") continue;
-
-        var horseName = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
-        var rankIdx = top3.indexOf(horseName);
-        indices.push(i);
-
-        if (trace.name === "glow") {{
-            if (rankIdx !== -1) {{
-                updateData['marker.color'].push(rankColors[rankIdx]);
-                updateData['opacity'].push(0.25);
-                updateData['marker.size'].push(rankIdx === 0 ? 55 : 45);
-            }} else {{
-                updateData['marker.color'].push("rgba(0,0,0,0)");
-                updateData['opacity'].push(0);
-                updateData['marker.size'].push(0);
-            }}
-        }} else if (trace.name === "node") {{
-            if (rankIdx !== -1) {{
-                updateData['marker.symbol'].push(rankShapes[rankIdx]);
-                updateData['marker.size'].push(26);
-                updateData['marker.line.width'].push(4);
-                updateData['marker.line.color'].push(rankColors[rankIdx]);
-            }} else {{
-                updateData['marker.symbol'].push("circle");
-                updateData['marker.size'].push(14);
-                updateData['marker.line.width'].push(1.5);
-                updateData['marker.line.color'].push(null);
-            }}
-            updateData['marker.color'].push(null); // Keep original fill
-            updateData['opacity'].push(1.0);
-        }}
-    }}
-
-    Plotly.restyle(graphDiv, updateData, indices);
-}}
-
+// RENDER XY PLOT FOR TAB 2
 const renderGenChart = () => {{
     const gens = Object.keys(stats.avg_speed);
     const speeds = Object.values(stats.avg_speed);
     
     const chartDiv = document.getElementById('gen-performance-chart');
+    // Set dynamic width based on gen count to ensure horizontal scrolling
     const dynamicWidth = Math.max(350, gens.length * 65); 
     if(chartDiv) chartDiv.style.width = dynamicWidth + "px";
 
     const data = [{{
-        x: gens, y: speeds, mode: 'lines+markers', type: 'scatter',
-        marker: {{ size: 10, color: '#00F5FF', line: {{ color: '#FFD700', width: 2 }} }},
+        x: gens,
+        y: speeds,
+        mode: 'lines+markers',
+        type: 'scatter',
+        marker: {{ 
+            size: 10, 
+            color: '#00F5FF',
+            line: {{ color: '#FFD700', width: 2 }}
+        }},
         line: {{ color: '#00F5FF', width: 3, shape: 'spline' }},
         hovertemplate: '<b>Gen %{{x}}</b><br>Avg Speed: %{{y}}<extra></extra>',
     }}];
 
     const layout = {{
         margin: {{ l: 40, r: 40, t: 40, b: 60 }},
-        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-        xaxis: {{ title: "Generation", gridcolor: '#333', font: {{ color: '#888' }}, dtick: 1, fixedrange: true }},
-        yaxis: {{ title: "Avg Speed", gridcolor: '#222', font: {{ color: '#888' }}, zeroline: false }},
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        xaxis: {{ 
+            title: "Generation", 
+            gridcolor: '#333', 
+            font: {{ color: '#888' }},
+            dtick: 1,
+            fixedrange: true 
+        }},
+        yaxis: {{ 
+            title: "Avg Speed", 
+            gridcolor: '#222', 
+            font: {{ color: '#888' }},
+            zeroline: false
+        }},
         hoverlabel: {{ bgcolor: '#111', font: {{ family: 'monospace', color: '#fff' }} }}
     }};
+
     Plotly.newPlot('gen-performance-chart', data, layout, {{displayModeBar: false}});
+
+    chartDiv.on('plotly_click', function(data) {{
+        if (!data || !data.points) return;
+        const selectedGen = data.points[0].x;
+        const mainGraph = document.getElementsByClassName('plotly-graph-div')[0];
+        const newOpacities = []; const newWidths = [];
+
+        for(var i=0; i < mainGraph.data.length; i++) {{
+            var trace = mainGraph.data[i];
+            var isThisGen = trace.hovertext && trace.hovertext.includes("Gen: " + selectedGen);
+            newOpacities.push(isThisGen ? 1.0 : 0.05);
+            newWidths.push(isThisGen && trace.name.includes("line") ? 5.0 : (trace.name.includes("line") ? 0.1 : null));
+        }}
+        Plotly.restyle(mainGraph, {{ 'opacity': newOpacities, 'line.width': newWidths }});
+    }});
 }};
 
 window.addEventListener('load', function() {{
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 
-    // Initialize leaderboard with default (speed)
-    renderLeaderboard();
+    const t16Body = document.getElementById('top-16-body');
+    stats.top_16.forEach((h, i) => {{
+        let row = document.createElement('tr');
+        row.innerHTML = `<td>${{i+1}}</td><td>${{h.Name}}</td><td style="color:#FFD700; font-weight:bold;">${{h.Speed}}</td>`;
+        row.onclick = () => {{ currentHighlighted = h.Name; highlightLogic(h.Name); }};
+        t16Body.appendChild(row);
+    }});
+
     renderGenChart();
 
     const renderPie = (targetId, dataDict) => {{
@@ -654,7 +557,6 @@ window.addEventListener('load', function() {{
     }}
 
     document.addEventListener('keydown', (e) => {{ if(e.key.toLowerCase() === 'm') toggleMode(); }});
-    
     graphDiv.on('plotly_click', function(data){{
         if (!data || !data.points) return;
         var pt = data.points[0]; var raw = pt.customdata;
@@ -663,7 +565,6 @@ window.addEventListener('load', function() {{
         if (currentHighlighted === name) resetToDefault();
         else {{ currentHighlighted = name; highlightLogic(name); }}
     }});
-    
     graphDiv.addEventListener('mousedown', (e) => {{ if(e.target.classList.contains('nsewdrag')) resetToDefault(); }});
 }});
 </script>
