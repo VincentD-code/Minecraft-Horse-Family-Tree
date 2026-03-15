@@ -451,6 +451,8 @@ function openTab(index) {{
 
 function resetToDefault() {{
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
+    if (!graphDiv) return;
+    
     var newOpacities = [];
     var newWidths = [];
 
@@ -466,7 +468,7 @@ function resetToDefault() {{
             newOpacities.push(0.25);
             newWidths.push(null);
         }} else {{
-            newOpacities.push(1.0); // Nodes
+            newOpacities.push(1.0);
             newWidths.push(null);
         }}
     }}
@@ -477,10 +479,11 @@ function resetToDefault() {{
 const renderGenChart = () => {{
     const gens = Object.keys(stats.avg_speed);
     const speeds = Object.values(stats.avg_speed);
-    
     const chartDiv = document.getElementById('gen-performance-chart');
+    if(!chartDiv) return;
+
     const dynamicWidth = Math.max(350, gens.length * 65); 
-    if(chartDiv) chartDiv.style.width = dynamicWidth + "px";
+    chartDiv.style.width = dynamicWidth + "px";
 
     const data = [{{
         x: gens, y: speeds, mode: 'lines+markers', type: 'scatter',
@@ -572,13 +575,14 @@ window.addEventListener('load', function() {{
             var trace = graphDiv.data[i];
             var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
             var traceHorseName = (rawData && typeof rawData === 'object') ? rawData.child : rawData;
-            var isRelated = false;
             
+            var isRelated = false;
             if (trace.name === "node" || trace.name.startsWith("glow")) {{
                 isRelated = relatedSet.includes(traceHorseName);
             }} else if (trace.name.includes("line")) {{
                 isRelated = relatedSet.includes(traceHorseName) && (traceHorseName !== selectedHorse || currentMode === 'ancestors');
             }}
+            
             newOpacities.push(isRelated ? 1.0 : 0.05);
             newWidths.push(isRelated && trace.name.includes("line") ? 5.0 : (trace.name.includes("line") ? 0.1 : null));
         }}
@@ -594,10 +598,7 @@ window.addEventListener('load', function() {{
     }};
 
     window.toggleStatMode = function() {{
-        if (currentStatMode === 'speed') currentStatMode = 'jump';
-        else if (currentStatMode === 'jump') currentStatMode = 'health';
-        else currentStatMode = 'speed';
-
+        currentStatMode = (currentStatMode === 'speed') ? 'jump' : (currentStatMode === 'jump' ? 'health' : 'speed');
         var txt = document.getElementById('stat-text');
         txt.innerText = "STAT: " + currentStatMode.toUpperCase();
         var statColors = {{ 'speed': '#FFD700', 'jump': '#00FF7F', 'health': '#FF004F' }};
@@ -613,20 +614,17 @@ window.addEventListener('load', function() {{
 
         for (var i = 0; i < graphDiv.data.length; i++) {{
             var trace = graphDiv.data[i];
-            var tName = trace.name;
-            if (tName && tName.startsWith("glow_")) {{
+            if (trace.name && trace.name.startsWith("glow_")) {{
                 glowIndices.push(i);
-                visibleUpdates.push(tName === "glow_" + currentStatMode);
-            }}
-            else if (tName === "node") {{
+                visibleUpdates.push(trace.name === "glow_" + currentStatMode);
+            }} else if (trace.name === "node") {{
                 var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
                 var hName = (rawData && typeof rawData === 'object') ? rawData.child : rawData;
                 var rank = topList.indexOf(hName);
                 var symbol = (rank === 0) ? "star" : (rank === 1 ? "diamond" : (rank === 2 ? "triangle-up" : "circle"));
-                var dName = (rank === 0) ? ("★ GOD HORSE: " + hName.toUpperCase() + " ★") : hName.toUpperCase();
                 
                 nodeIndices.push(i);
-                textUpdates.push([dName]);
+                textUpdates.push([(rank === 0) ? ("★ GOD HORSE: " + hName.toUpperCase() + " ★") : hName.toUpperCase()]);
                 symbolUpdates.push(symbol);
                 sizeUpdates.push((rank !== -1) ? 26 : 14);
                 lineWidthUpdates.push((rank !== -1) ? 4 : 1.5);
@@ -649,16 +647,26 @@ window.addEventListener('load', function() {{
 
     graphDiv.on('plotly_click', function(data){{
         if (!data || !data.points) return;
-        var pt = data.points[0]; var raw = pt.customdata;
-        var name = (raw && typeof raw === 'object') ? (raw.child || raw[0]) : (Array.isArray(raw) ? raw[0] : raw);
-        if (!name) {{ resetToDefault(); return; }}
+        var pt = data.points[0];
+        var raw = pt.customdata;
+        var name = null;
+        
+        // Robust extraction of horse name from customdata
+        if (raw) {{
+            if (typeof raw === 'string') name = raw;
+            else if (typeof raw === 'object' && raw.child) name = raw.child;
+            else if (Array.isArray(raw)) name = raw[0];
+        }}
+
+        if (!name) return; // Ignore background clicks here to prevent flickering
+
         if (currentHighlighted === name) resetToDefault();
         else {{ currentHighlighted = name; highlightLogic(name); }}
     }});
 
-    graphDiv.on('plotly_doubleclick', resetToDefault);
-    graphDiv.addEventListener('click', (e) => {{ 
-        if(e.target.classList.contains('nsewdrag') || e.target.classList.contains('bg')) resetToDefault(); 
+    // Use double-click on graph background to reset everything
+    graphDiv.on('plotly_doubleclick', function() {{
+        resetToDefault();
     }});
 }});
 </script>
