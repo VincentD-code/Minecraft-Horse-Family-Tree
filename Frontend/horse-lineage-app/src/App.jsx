@@ -1,83 +1,80 @@
 import React, { useState, useEffect } from 'react';
-import CreatePlotlyComponent from 'react-plotly.js/factory';
-import Plotly from 'plotly.js-dist-min';
-
-const Plot = CreatePlotlyComponent(Plotly);
-import './App.css';
+import Plot from 'react-plotly.js';
 
 function App() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('stats');
-  const [isBinderOpen, setIsBinderOpen] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/horse-data')
-      .then(res => res.json())
-      .then(json => {
+    // The path './horse_data.json' works because Vite serves 
+    // everything in the 'public' folder at the root level.
+    fetch('horse_data.json')
+      .then((res) => {
+        if (!res.ok) throw new Error("JSON file not found. Run Python script!");
+        return res.json();
+      })
+      .then((json) => {
         setData(json);
         setLoading(false);
       })
-      .catch(err => console.error("Error fetching data:", err));
+      .catch((err) => {
+        console.error(err);C
+        setLoading(false);
+      });
   }, []);
 
-  if (loading) return <div className="loading">Loading Horse Lineage...</div>;
+  if (loading) return <div style={{padding: '50px', textAlign: 'center'}}><h2>Loading Horse Genetics...</h2></div>;
+  if (!data) return <div style={{padding: '50px', color: 'red'}}>Error: horse_data.json missing in public folder.</div>;
 
   return (
-    <div className="main-wrapper">
-      {/* UI Controls */}
-      <div id="mode-ui" onClick={() => console.log("Toggle Mode")}>Change View Mode</div>
-      
-      {/* Plotly Graph */}
-      <Plot
-        data={data.graph.data}
-        layout={data.graph.layout}
-        useResizeHandler={true}
-        style={{ width: "100%", height: "100%" }}
-        config={{ displayModeBar: false }}
-      />
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
+      <div style={{ padding: '20px', textAlign: 'center', borderBottom: '1px solid #222' }}>
+        <h1 style={{ color: '#FFD700', textTransform: 'uppercase', letterSpacing: '2px' }}>
+          Minecraft Horse Family Tree
+        </h1>
+      </div>
 
-      {/* Binder Side Panel */}
-      <div id="binder-container" className={isBinderOpen ? 'active' : ''}>
-        <div className="tab-stack">
-          <div 
-            className={`binder-tab ${activeTab === 'stats' ? 'active-tab' : ''}`}
-            onClick={() => { setActiveTab('stats'); setIsBinderOpen(true); }}
-          >📊</div>
-          <div 
-            className={`binder-tab ${activeTab === 'leaderboard' ? 'active-tab' : ''}`}
-            onClick={() => { setActiveTab('leaderboard'); setIsBinderOpen(true); }}
-          >🏆</div>
-          <div 
-            className="binder-tab" 
-            style={{color: '#ff4444'}}
-            onClick={() => setIsBinderOpen(!isBinderOpen)}
-          >✖</div>
+      {/* Main Graph Area */}
+      <div style={{ flex: 1, width: '100%', height: '70vh' }}>
+        <Plot
+          data={data.graph.data}
+          layout={{
+            ...data.graph.layout,
+            autosize: true,
+            font: { family: 'monospace', color: '#fff' },
+          }}
+          useResizeHandler={true}
+          style={{ width: '100%', height: '100%' }}
+          config={{ responsive: true, displayModeBar: true }}
+        />
+      </div>
+
+      {/* Stats Dashboard */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', padding: '30px', background: '#0a0a0a' }}>
+        
+        {/* Top Speed Card */}
+        <div style={{ background: '#111', padding: '20px', border: '1px solid #333', borderRadius: '4px' }}>
+          <h3 style={{ color: '#00FF7F', borderBottom: '1px solid #222' }}>⚡ FASTEST HORSES</h3>
+          {data.stats.top_16_speed.slice(0, 8).map((h, i) => (
+            <div key={i} style={{ padding: '4px 0', fontSize: '14px' }}>
+              <span style={{color: '#666'}}>{i+1}.</span> {h.Name} — <span style={{color: '#00D4FF'}}>{h.Speed} bps</span>
+            </div>
+          ))}
         </div>
 
-        <div className={`binder-page ${activeTab === 'stats' ? 'active-page' : ''}`}>
-          <h2 className="page-header">GENETIC STATS</h2>
-          <p>Global Bloodline Distribution:</p>
-          <ul>
-            {Object.entries(data.stats.blood_all).map(([name, pct]) => (
-              <li key={name}>{name}: {pct}%</li>
-            ))}
-          </ul>
+        {/* Bloodline Breakdown Card */}
+        <div style={{ background: '#111', padding: '20px', border: '1px solid #333', borderRadius: '4px' }}>
+          <h3 style={{ color: '#FF004F', borderBottom: '1px solid #222' }}>🧬 LIVING BLOODLINES</h3>
+          {Object.entries(data.stats.blood_alive)
+            .sort(([,a], [,b]) => b - a)
+            .map(([name, pct]) => (
+              <div key={name} style={{ padding: '4px 0', fontSize: '14px' }}>
+                {name}: <span style={{color: '#FFD700'}}>{pct}%</span>
+              </div>
+          ))}
         </div>
 
-        <div className={`binder-page ${activeTab === 'leaderboard' ? 'active-page' : ''}`}>
-          <h2 className="page-header">TOP SPEED (ALIVE)</h2>
-          <table>
-            <tbody>
-              {data.stats.top_16_speed.map((horse, i) => (
-                <tr key={i}>
-                  <td>{i + 1}. {horse.Name}</td>
-                  <td>{horse.Speed.toFixed(2)} bps</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );
