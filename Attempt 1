@@ -13,17 +13,15 @@ if not os.path.exists(csv_filename):
     print(f"CRITICAL ERROR: '{csv_filename}' not found.")
     exit()
 
-# Load data - strictly keeping numeric types initially
+# Load data
 df = pd.read_csv(csv_filename)
 
 # Define text columns and handle strings safely
 text_cols = ['Name', 'Parent1', 'Parent2', 'Status', 'OriginBlood', 'Appearance']
 for col in text_cols:
     if col in df.columns:
-        # Convert to string, strip whitespace, and handle 'nan' strings
         df[col] = df[col].astype(str).str.strip().replace(["nan", "None", ""], np.nan)
 
-# Special replacement for specific bloodline names
 df['OriginBlood'] = df['OriginBlood'].replace("Void Born", "Celestial Grass")
 
 # SAFE NUMERIC CONVERSION
@@ -32,8 +30,6 @@ df['Jump'] = pd.to_numeric(df['Jump'], errors='coerce').fillna(0)
 df['Health'] = pd.to_numeric(df['Health'], errors='coerce').fillna(0)
 df['Generation'] = pd.to_numeric(df['Generation'], errors='coerce')
 
-# Convert to dictionary for fast lookup
-# We use .fillna("") here for the dict to make parent lookups easier
 horse_db = df.fillna("").set_index("Name").to_dict('index')
 
 origin_colors = {
@@ -88,18 +84,13 @@ def process_horse(name, depth=0):
     p2 = row.get("Parent2", "")
     current_speed = float(row.get("Speed", 0))
 
-    # FOUNDATION HORSE LOGIC (No parents)
     if p1 == "" or p2 == "":
-        # Extract bloodline from the OriginBlood column specifically
         blood = row.get("OriginBlood")
         if not blood or blood == "": blood = "Unknown"
-        
         dna = {blood: 1.0}
         color = origin_colors.get(blood, "#444444")
         level = 0
         mutation = 0.0
-    
-    # BRED HORSE LOGIC
     else:
         res1 = process_horse(p1, depth + 1)
         res2 = process_horse(p2, depth + 1)
@@ -114,10 +105,7 @@ def process_horse(name, depth=0):
         mutation = (3 * current_speed) - p1_spd - p2_spd
 
     data_registry[name] = {
-        "dna": dna,
-        "color": color,
-        "level": level,
-        "mutation": mutation
+        "dna": dna, "color": color, "level": level, "mutation": mutation
     }
     ancestor_map[name] = get_ancestor_list(name)
     return data_registry[name]
@@ -145,7 +133,7 @@ def get_all_descendants(name):
 final_desc_map = {name: get_all_descendants(name) + [name] for name in horse_db}
 
 # =====================================================
-# 2. POSITIONING
+# 2. POSITIONING & TOP 3 COMPUTATIONS
 # =====================================================
 generation_groups = {}
 for name, data in data_registry.items():
@@ -157,6 +145,10 @@ for level, names in generation_groups.items():
     width = len(names) * 20.0
     for idx, name in enumerate(names):
         pos[name] = ((idx * 20.0) - (width / 2), -level * 15.0)
+
+top_3_speed = df.nlargest(3, 'Speed')['Name'].tolist()
+top_3_jump = df.nlargest(3, 'Jump')['Name'].tolist()
+top_3_health = df.nlargest(3, 'Health')['Name'].tolist()
 
 # =====================================================
 # 3. PLOTLY TREE BUILDER
@@ -192,14 +184,27 @@ for name, row in horse_db.items():
             name="line_child"
         ))
 
-top_three = df.nlargest(3, 'Speed')['Name'].tolist()
 rank_colors = {0: "#FFD700", 1: "#C0C0C0", 2: "#CD7F32"}
 rank_shapes = {0: "star", 1: "diamond", 2: "triangle-up"}
 
 for name, (x, y) in pos.items():
     h_data = data_registry[name]
     row = horse_db[name]
-    rank = top_three.index(name) if name in top_three else None
+    
+    # Generate hidden/visible glow traces for all 3 stats dynamically
+    for stat_name, top_list in [("speed", top_3_speed), ("jump", top_3_jump), ("health", top_3_health)]:
+        if name in top_list:
+            rank = top_list.index(name)
+            if rank <= 2:
+                fig.add_trace(go.Scatter(
+                    x=[x], y=[y], mode='markers',
+                    marker=dict(size=55 if rank == 0 else 45, color=rank_colors[rank], opacity=0.25),
+                    hoverinfo='skip', showlegend=False, name=f"glow_{stat_name}", customdata=[name],
+                    visible=(stat_name == "speed") # Only speed glows visible on load
+                ))
+
+    # Initial node render defaults to Speed
+    rank = top_3_speed.index(name) if name in top_3_speed else None
     is_god, is_dead = (rank == 0), row.get("Status") == "Dead"
     node_fill = "#050505" if is_dead else h_data["color"]
     line_width = 4 if rank is not None else 1.5
@@ -210,14 +215,13 @@ for name, (x, y) in pos.items():
     p1, p2 = row.get("Parent1"), row.get("Parent2")
     parent_info = f"Parents: {p1} & {p2}<br>Roll Luck: {h_data['mutation']:.2f}" if p1 and p2 else f"Origin: {row.get('OriginBlood', 'Unknown')}"
 
-    # Handling Generation properly
     gen_val = int(row['Generation']) if (row.get('Generation') != "" and not isinstance(row.get('Generation'), str)) else h_data['level']
     appearance_val = row.get("Appearance") if row.get("Appearance") else "Standard"
     hp = float(row.get('Health', 0))
     hearts = round(hp / 2, 1)
 
     hover_label = (
-        f"<b>{display_name}</b> "
+        f"<b>{name.upper()}</b> "
         f"({'DEAD' if is_dead else 'ALIVE'})<br>"
         f"Gen: {gen_val}<br>"
         f"Appearance: {appearance_val}<br>"
@@ -228,13 +232,6 @@ for name, (x, y) in pos.items():
         f"{parent_info}<br>"
         f"<b>DNA Breakdown:</b><br>{dna_str}"
     )
-
-    if rank is not None and rank <= 2:
-        fig.add_trace(go.Scatter(
-            x=[x], y=[y], mode='markers',
-            marker=dict(size=55 if is_god else 45, color=rank_colors[rank], opacity=0.25),
-            hoverinfo='skip', showlegend=False, name="glow", customdata=[name]
-        ))
 
     fig.add_trace(go.Scatter(
         x=[x], y=[y], mode='markers+text', text=[display_name], textposition="bottom center",
@@ -253,7 +250,12 @@ fig.update_layout(
 # =====================================================
 # 4. BINDER UI DATA & JSON DUMPS
 # =====================================================
-top_16_speed = df.nlargest(16, 'Speed')[['Name', 'Speed']].to_dict('records')
+alive_df = df[df['Status'].astype(str).str.strip().str.lower() != 'dead']
+
+top_16_speed_alive = alive_df.nlargest(16, 'Speed')[['Name', 'Speed']].to_dict('records')
+top_16_jump_alive = alive_df.nlargest(16, 'Jump')[['Name', 'Jump']].to_dict('records')
+top_16_health_alive = alive_df.nlargest(16, 'Health')[['Name', 'Health']].to_dict('records')
+
 gen_speeds = {}
 for name, data in data_registry.items():
     if horse_db[name].get("OriginBlood") == "Slothsoul": continue
@@ -273,14 +275,19 @@ def calculate_global_genetics(include_dead=True):
     return {k: round((v / total_sum) * 100, 1) for k, v in totals.items()} if total_sum > 0 else {}
 
 stats_json = json.dumps({
-    "top_16": top_16_speed, "avg_speed": avg_speed_gen,
+    "top_16_speed": top_16_speed_alive,
+    "top_16_jump": top_16_jump_alive,
+    "top_16_health": top_16_health_alive,
+    "avg_speed": avg_speed_gen,
     "blood_all": calculate_global_genetics(include_dead=True),
     "blood_alive": calculate_global_genetics(include_dead=False)
 })
 
+top3_json = json.dumps({"speed": top_3_speed, "jump": top_3_jump, "health": top_3_health})
+base_colors_json = json.dumps({name: d["color"] for name, d in data_registry.items()})
+
 anc_json, desc_json, js_color_map = json.dumps(ancestor_map), json.dumps(final_desc_map), json.dumps(origin_colors)
 
-# Generate the base Plotly HTML
 html_content = fig.to_html(include_plotlyjs='cdn', config={'scrollZoom': True, 'doubleClick': False})
 
 ui_html = f"""
@@ -315,19 +322,11 @@ ui_html = f"""
     
     .page-header {{ border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 20px; font-weight: bold; font-size: 18px; color: #FFD700; }}
     
-    /* HORIZONTAL SCROLLER FOR TAB 2 */
     .graph-scroll-container {{
-        width: 100%;
-        overflow-x: auto; /* Enable horizontal slider */
-        overflow-y: hidden;
-        background: #1a1a1a;
-        border-radius: 8px;
-        margin-bottom: 15px;
-        border: 1px solid #333;
+        width: 100%; overflow-x: auto; overflow-y: hidden;
+        background: #1a1a1a; border-radius: 8px; margin-bottom: 15px; border: 1px solid #333;
     }}
-    #gen-performance-chart {{
-        height: 400px; /* Fixed height for the XY plot */
-    }}
+    #gen-performance-chart {{ height: 400px; }}
 
     table {{ width: 100%; border-collapse: collapse; }}
     th {{ text-align: left; color: #888; font-size: 11px; padding-bottom: 10px; }}
@@ -344,7 +343,12 @@ ui_html = f"""
     #mode-ui {{
         position:fixed; top:20px; left:20px; z-index:9999; background:rgba(20,20,20,0.95); 
         padding:15px; border:1px solid #444; color:white; font-family:monospace; 
-        border-radius:8px; cursor:pointer; user-select:none;
+        border-radius:8px; cursor:pointer; user-select:none; width: 150px; text-align: center;
+    }}
+    #stat-ui {{
+        position:fixed; top:90px; left:20px; z-index:9999; background:rgba(20,20,20,0.95); 
+        padding:15px; border:1px solid #444; color:white; font-family:monospace; 
+        border-radius:8px; cursor:pointer; user-select:none; width: 150px; text-align: center;
     }}
 
     .pie-container {{ height: 350px; width: 100%; margin-bottom: 40px; }}
@@ -358,10 +362,23 @@ ui_html = f"""
     </div>
 
     <div id="page-0" class="binder-page active-page">
-        <div class="page-header">TOP 16 SPEEDS</div>
-        <table>
+        <div class="page-header">TOP 16 (ALIVE ONLY)</div>
+        <div style="display:flex; justify-content:space-around; margin-bottom:10px; border-bottom:1px solid #333; padding-bottom:10px; font-size:12px; font-weight:bold;">
+            <span style="cursor:pointer; color:#FFD700;" onclick="switchTable('speed')" id="tab-speed">SPEED</span>
+            <span style="cursor:pointer; color:#666;" onclick="switchTable('jump')" id="tab-jump">JUMP</span>
+            <span style="cursor:pointer; color:#666;" onclick="switchTable('health')" id="tab-health">HEALTH</span>
+        </div>
+        <table id="table-speed">
             <thead><tr><th>#</th><th>NAME</th><th>SPEED</th></tr></thead>
-            <tbody id="top-16-body"></tbody>
+            <tbody id="top-16-speed-body"></tbody>
+        </table>
+        <table id="table-jump" style="display:none;">
+            <thead><tr><th>#</th><th>NAME</th><th>JUMP</th></tr></thead>
+            <tbody id="top-16-jump-body"></tbody>
+        </table>
+        <table id="table-health" style="display:none;">
+            <thead><tr><th>#</th><th>NAME</th><th>HEALTH</th></tr></thead>
+            <tbody id="top-16-health-body"></tbody>
         </table>
         <div class="minimize-btn" onclick="toggleBinder()">[ MINIMIZE BINDER ]</div>
     </div>
@@ -387,8 +404,13 @@ ui_html = f"""
 </div>
 
 <div id="mode-ui" onclick="toggleMode()">
-    <div id="mode-text" style="color:#00F5FF; font-weight:bold; font-size:16px;">ANCESTORS</div>
+    <div id="mode-text" style="color:#00F5FF; font-weight:bold; font-size:14px;">ANCESTORS</div>
     <div style="margin-top:5px; font-size:9px; color:#666;">CLICK TO TOGGLE | PRESS 'M'</div>
+</div>
+
+<div id="stat-ui" onclick="toggleStatMode()">
+    <div id="stat-text" style="color:#FFD700; font-weight:bold; font-size:14px;">STAT: SPEED</div>
+    <div style="margin-top:5px; font-size:9px; color:#666;">CLICK TO TOGGLE | PRESS 'S'</div>
 </div>
 """
 
@@ -399,7 +421,11 @@ var ancestorMap = {anc_json};
 var descendantMap = {desc_json};
 var stats = {stats_json};
 var bloodColors = {js_color_map};
+var top3Ranks = {top3_json};
+var baseColors = {base_colors_json};
+
 var currentMode = 'ancestors'; 
+var currentStatMode = 'speed';
 var currentHighlighted = null;
 
 function toggleBinder() {{
@@ -423,47 +449,26 @@ function openTab(index) {{
     }}, 50);
 }}
 
-// RENDER XY PLOT FOR TAB 2
 const renderGenChart = () => {{
     const gens = Object.keys(stats.avg_speed);
     const speeds = Object.values(stats.avg_speed);
     
     const chartDiv = document.getElementById('gen-performance-chart');
-    // Set dynamic width based on gen count to ensure horizontal scrolling
     const dynamicWidth = Math.max(350, gens.length * 65); 
     if(chartDiv) chartDiv.style.width = dynamicWidth + "px";
 
     const data = [{{
-        x: gens,
-        y: speeds,
-        mode: 'lines+markers',
-        type: 'scatter',
-        marker: {{ 
-            size: 10, 
-            color: '#00F5FF',
-            line: {{ color: '#FFD700', width: 2 }}
-        }},
+        x: gens, y: speeds, mode: 'lines+markers', type: 'scatter',
+        marker: {{ size: 10, color: '#00F5FF', line: {{ color: '#FFD700', width: 2 }} }},
         line: {{ color: '#00F5FF', width: 3, shape: 'spline' }},
         hovertemplate: '<b>Gen %{{x}}</b><br>Avg Speed: %{{y}}<extra></extra>',
     }}];
 
     const layout = {{
         margin: {{ l: 40, r: 40, t: 40, b: 60 }},
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)',
-        xaxis: {{ 
-            title: "Generation", 
-            gridcolor: '#333', 
-            font: {{ color: '#888' }},
-            dtick: 1,
-            fixedrange: true 
-        }},
-        yaxis: {{ 
-            title: "Avg Speed", 
-            gridcolor: '#222', 
-            font: {{ color: '#888' }},
-            zeroline: false
-        }},
+        paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+        xaxis: {{ title: "Generation", gridcolor: '#333', font: {{ color: '#888' }}, dtick: 1, fixedrange: true }},
+        yaxis: {{ title: "Avg Speed", gridcolor: '#222', font: {{ color: '#888' }}, zeroline: false }},
         hoverlabel: {{ bgcolor: '#111', font: {{ family: 'monospace', color: '#fff' }} }}
     }};
 
@@ -488,13 +493,24 @@ const renderGenChart = () => {{
 window.addEventListener('load', function() {{
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 
-    const t16Body = document.getElementById('top-16-body');
-    stats.top_16.forEach((h, i) => {{
-        let row = document.createElement('tr');
-        row.innerHTML = `<td>${{i+1}}</td><td>${{h.Name}}</td><td style="color:#FFD700; font-weight:bold;">${{h.Speed}}</td>`;
-        row.onclick = () => {{ currentHighlighted = h.Name; highlightLogic(h.Name); }};
-        t16Body.appendChild(row);
+    // Populate the 3 Leaderboards
+    ['speed', 'jump', 'health'].forEach(stat => {{
+        const tbody = document.getElementById(`top-16-${{stat}}-body`);
+        const statKey = stat.charAt(0).toUpperCase() + stat.slice(1);
+        stats[`top_16_${{stat}}`].forEach((h, i) => {{
+            let row = document.createElement('tr');
+            row.innerHTML = `<td>${{i+1}}</td><td>${{h.Name}}</td><td style="color:#FFD700; font-weight:bold;">${{h[statKey]}}</td>`;
+            row.onclick = () => {{ currentHighlighted = h.Name; highlightLogic(h.Name); }};
+            tbody.appendChild(row);
+        }});
     }});
+
+    window.switchTable = function(stat) {{
+        ['speed', 'jump', 'health'].forEach(s => {{
+            document.getElementById(`table-${{s}}`).style.display = (s === stat) ? 'table' : 'none';
+            document.getElementById(`tab-${{s}}`).style.color = (s === stat) ? '#FFD700' : '#666';
+        }});
+    }};
 
     renderGenChart();
 
@@ -505,14 +521,11 @@ window.addEventListener('load', function() {{
         const data = [{{
             values: values, labels: labels, type: 'pie', hole: 0.4,
             marker: {{ colors: colors, line: {{ color: '#121212', width: 2 }} }},
-            textinfo: 'percent', hoverinfo: 'label+percent',
-            textfont: {{ family: 'monospace', color: '#fff' }}
+            textinfo: 'percent', hoverinfo: 'label+percent', textfont: {{ family: 'monospace', color: '#fff' }}
         }}];
         const layout = {{
-            showlegend: true,
-            legend: {{ orientation: 'h', font: {{ size: 10, color: '#888' }}, y: -0.2 }},
-            margin: {{ t: 10, b: 10, l: 10, r: 10 }},
-            paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)'
+            showlegend: true, legend: {{ orientation: 'h', font: {{ size: 10, color: '#888' }}, y: -0.2 }},
+            margin: {{ t: 10, b: 10, l: 10, r: 10 }}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)'
         }};
         Plotly.newPlot(targetId, data, layout, {{displayModeBar: false}});
     }};
@@ -520,6 +533,7 @@ window.addEventListener('load', function() {{
     renderPie('pie-alive', stats.blood_alive);
     renderPie('pie-all', stats.blood_all);
 
+    // Core Highlight Filter
     window.highlightLogic = function(selectedHorse) {{
         var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
         var relatedSet = targetMap[selectedHorse] || [selectedHorse];
@@ -530,7 +544,8 @@ window.addEventListener('load', function() {{
             var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
             var traceHorseName = (rawData && typeof rawData === 'object') ? rawData.child : rawData;
             var isRelated = false;
-            if (trace.name === "node" || trace.name === "glow") {{
+            
+            if (trace.name === "node" || trace.name.startsWith("glow")) {{
                 isRelated = relatedSet.includes(traceHorseName);
             }} else if (trace.name.includes("line")) {{
                 isRelated = relatedSet.includes(traceHorseName) && (traceHorseName !== selectedHorse || currentMode === 'ancestors');
@@ -549,14 +564,84 @@ window.addEventListener('load', function() {{
         if (currentHighlighted) highlightLogic(currentHighlighted);
     }};
 
+    window.toggleStatMode = function() {{
+        if (currentStatMode === 'speed') currentStatMode = 'jump';
+        else if (currentStatMode === 'jump') currentStatMode = 'health';
+        else currentStatMode = 'speed';
+
+        var txt = document.getElementById('stat-text');
+        txt.innerText = "STAT: " + currentStatMode.toUpperCase();
+
+        var statColors = {{ 'speed': '#FFD700', 'jump': '#00FF7F', 'health': '#FF004F' }};
+        txt.style.color = statColors[currentStatMode];
+
+        applyStatView();
+    }};
+
+    function applyStatView() {{
+        var topList = top3Ranks[currentStatMode];
+
+        var nodeIndices = []; var textUpdates = []; var symbolUpdates = [];
+        var sizeUpdates = []; var lineWidthUpdates = []; var lineColorUpdates = [];
+        var visibleUpdates = []; var glowIndices = [];
+
+        for (var i = 0; i < graphDiv.data.length; i++) {{
+            var trace = graphDiv.data[i];
+            var tName = trace.name;
+
+            if (tName && tName.startsWith("glow_")) {{
+                glowIndices.push(i);
+                visibleUpdates.push(tName === "glow_" + currentStatMode);
+            }}
+            else if (tName === "node") {{
+                var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
+                var hName = (rawData && typeof rawData === 'object') ? rawData.child : rawData;
+                
+                var rank = topList.indexOf(hName);
+                var isGod = (rank === 0);
+                
+                var symbol = "circle";
+                if (rank === 0) symbol = "star";
+                else if (rank === 1) symbol = "diamond";
+                else if (rank === 2) symbol = "triangle-up";
+
+                var dName = isGod ? ("★ GOD HORSE: " + hName.toUpperCase() + " ★") : hName.toUpperCase();
+                var size = (rank !== -1) ? 26 : 14;
+                var lWidth = (rank !== -1) ? 4 : 1.5;
+                var lColor = (rank !== -1) ? (rank === 0 ? "#FFD700" : (rank === 1 ? "#C0C0C0" : "#CD7F32")) : baseColors[hName];
+
+                nodeIndices.push(i);
+                textUpdates.push([dName]);
+                symbolUpdates.push(symbol);
+                sizeUpdates.push(size);
+                lineWidthUpdates.push(lWidth);
+                lineColorUpdates.push(lColor);
+            }}
+        }}
+
+        if (glowIndices.length > 0) {{
+            Plotly.restyle(graphDiv, {{ 'visible': visibleUpdates }}, glowIndices);
+        }}
+        if (nodeIndices.length > 0) {{
+            Plotly.restyle(graphDiv, {{
+                'text': textUpdates, 'marker.symbol': symbolUpdates, 'marker.size': sizeUpdates,
+                'marker.line.width': lineWidthUpdates, 'marker.line.color': lineColorUpdates
+            }}, nodeIndices);
+        }}
+    }}
+
     function resetToDefault() {{
-        var ops = graphDiv.data.map(t => t.name === "line_parent" ? 0.3 : (t.name === "line_child" ? 0.45 : (t.name === "glow" ? 0.2 : 1.0)));
+        var ops = graphDiv.data.map(t => t.name === "line_parent" ? 0.3 : (t.name === "line_child" ? 0.45 : (t.name.startsWith("glow") ? 0.2 : 1.0)));
         var wds = graphDiv.data.map(t => t.name === "line_child" ? 2.5 : (t.name === "line_parent" ? 1.5 : null));
         Plotly.restyle(graphDiv, {{ 'opacity': ops, 'line.width': wds }});
         currentHighlighted = null;
     }}
 
-    document.addEventListener('keydown', (e) => {{ if(e.key.toLowerCase() === 'm') toggleMode(); }});
+    document.addEventListener('keydown', (e) => {{ 
+        if(e.key.toLowerCase() === 'm') toggleMode(); 
+        if(e.key.toLowerCase() === 's') toggleStatMode();
+    }});
+
     graphDiv.on('plotly_click', function(data){{
         if (!data || !data.points) return;
         var pt = data.points[0]; var raw = pt.customdata;
@@ -574,4 +659,4 @@ final_output = html_content.replace('</body>', js_script + '</body>')
 with open("index.html", "w", encoding="utf-8") as f:
     f.write(final_output)
 
-print("Process complete. 'index.html' updated with XY Plot and scrollers.")
+print("Process complete. 'index.html' updated with Stat Toggles and Alive Leaderboards.")
