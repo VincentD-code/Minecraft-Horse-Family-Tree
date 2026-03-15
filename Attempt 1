@@ -449,6 +449,31 @@ function openTab(index) {{
     }}, 50);
 }}
 
+function resetToDefault() {{
+    var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
+    var newOpacities = [];
+    var newWidths = [];
+
+    for (var i = 0; i < graphDiv.data.length; i++) {{
+        var t = graphDiv.data[i];
+        if (t.name === "line_parent") {{
+            newOpacities.push(0.30);
+            newWidths.push(1.5);
+        }} else if (t.name === "line_child") {{
+            newOpacities.push(0.45);
+            newWidths.push(2.5);
+        }} else if (t.name && t.name.startsWith("glow")) {{
+            newOpacities.push(0.25);
+            newWidths.push(null);
+        }} else {{
+            newOpacities.push(1.0); // Nodes
+            newWidths.push(null);
+        }}
+    }}
+    Plotly.restyle(graphDiv, {{ 'opacity': newOpacities, 'line.width': newWidths }});
+    currentHighlighted = null;
+}}
+
 const renderGenChart = () => {{
     const gens = Object.keys(stats.avg_speed);
     const speeds = Object.values(stats.avg_speed);
@@ -478,11 +503,17 @@ const renderGenChart = () => {{
         if (!data || !data.points) return;
         const selectedGen = data.points[0].x;
         const mainGraph = document.getElementsByClassName('plotly-graph-div')[0];
-        const newOpacities = []; const newWidths = [];
+        
+        if (currentHighlighted === "gen_" + selectedGen) {{
+            resetToDefault();
+            return;
+        }}
+        currentHighlighted = "gen_" + selectedGen;
 
+        const newOpacities = []; const newWidths = [];
         for(var i=0; i < mainGraph.data.length; i++) {{
             var trace = mainGraph.data[i];
-            var isThisGen = trace.hovertext && trace.hovertext.includes("Gen: " + selectedGen);
+            var isThisGen = trace.hovertext && trace.hovertext.toString().includes("Gen: " + selectedGen);
             newOpacities.push(isThisGen ? 1.0 : 0.05);
             newWidths.push(isThisGen && trace.name.includes("line") ? 5.0 : (trace.name.includes("line") ? 0.1 : null));
         }}
@@ -493,7 +524,6 @@ const renderGenChart = () => {{
 window.addEventListener('load', function() {{
     var graphDiv = document.getElementsByClassName('plotly-graph-div')[0];
 
-    // Populate the 3 Leaderboards
     ['speed', 'jump', 'health'].forEach(stat => {{
         const tbody = document.getElementById(`top-16-${{stat}}-body`);
         const statKey = stat.charAt(0).toUpperCase() + stat.slice(1);
@@ -533,7 +563,6 @@ window.addEventListener('load', function() {{
     renderPie('pie-alive', stats.blood_alive);
     renderPie('pie-all', stats.blood_all);
 
-    // Core Highlight Filter
     window.highlightLogic = function(selectedHorse) {{
         var targetMap = (currentMode === 'ancestors') ? ancestorMap : descendantMap;
         var relatedSet = targetMap[selectedHorse] || [selectedHorse];
@@ -561,7 +590,7 @@ window.addEventListener('load', function() {{
         var txt = document.getElementById('mode-text');
         txt.innerText = currentMode.toUpperCase();
         txt.style.color = (currentMode === 'ancestors') ? '#00F5FF' : '#FF4500';
-        if (currentHighlighted) highlightLogic(currentHighlighted);
+        if (currentHighlighted && !currentHighlighted.startsWith("gen_")) highlightLogic(currentHighlighted);
     }};
 
     window.toggleStatMode = function() {{
@@ -571,16 +600,13 @@ window.addEventListener('load', function() {{
 
         var txt = document.getElementById('stat-text');
         txt.innerText = "STAT: " + currentStatMode.toUpperCase();
-
         var statColors = {{ 'speed': '#FFD700', 'jump': '#00FF7F', 'health': '#FF004F' }};
         txt.style.color = statColors[currentStatMode];
-
         applyStatView();
     }};
 
     function applyStatView() {{
         var topList = top3Ranks[currentStatMode];
-
         var nodeIndices = []; var textUpdates = []; var symbolUpdates = [];
         var sizeUpdates = []; var lineWidthUpdates = []; var lineColorUpdates = [];
         var visibleUpdates = []; var glowIndices = [];
@@ -588,7 +614,6 @@ window.addEventListener('load', function() {{
         for (var i = 0; i < graphDiv.data.length; i++) {{
             var trace = graphDiv.data[i];
             var tName = trace.name;
-
             if (tName && tName.startsWith("glow_")) {{
                 glowIndices.push(i);
                 visibleUpdates.push(tName === "glow_" + currentStatMode);
@@ -596,45 +621,25 @@ window.addEventListener('load', function() {{
             else if (tName === "node") {{
                 var rawData = Array.isArray(trace.customdata) ? trace.customdata[0] : trace.customdata;
                 var hName = (rawData && typeof rawData === 'object') ? rawData.child : rawData;
-                
                 var rank = topList.indexOf(hName);
-                var isGod = (rank === 0);
+                var symbol = (rank === 0) ? "star" : (rank === 1 ? "diamond" : (rank === 2 ? "triangle-up" : "circle"));
+                var dName = (rank === 0) ? ("★ GOD HORSE: " + hName.toUpperCase() + " ★") : hName.toUpperCase();
                 
-                var symbol = "circle";
-                if (rank === 0) symbol = "star";
-                else if (rank === 1) symbol = "diamond";
-                else if (rank === 2) symbol = "triangle-up";
-
-                var dName = isGod ? ("★ GOD HORSE: " + hName.toUpperCase() + " ★") : hName.toUpperCase();
-                var size = (rank !== -1) ? 26 : 14;
-                var lWidth = (rank !== -1) ? 4 : 1.5;
-                var lColor = (rank !== -1) ? (rank === 0 ? "#FFD700" : (rank === 1 ? "#C0C0C0" : "#CD7F32")) : baseColors[hName];
-
                 nodeIndices.push(i);
                 textUpdates.push([dName]);
                 symbolUpdates.push(symbol);
-                sizeUpdates.push(size);
-                lineWidthUpdates.push(lWidth);
-                lineColorUpdates.push(lColor);
+                sizeUpdates.push((rank !== -1) ? 26 : 14);
+                lineWidthUpdates.push((rank !== -1) ? 4 : 1.5);
+                lineColorUpdates.push((rank !== -1) ? (rank === 0 ? "#FFD700" : (rank === 1 ? "#C0C0C0" : "#CD7F32")) : baseColors[hName]);
             }}
         }}
-
-        if (glowIndices.length > 0) {{
-            Plotly.restyle(graphDiv, {{ 'visible': visibleUpdates }}, glowIndices);
-        }}
+        if (glowIndices.length > 0) Plotly.restyle(graphDiv, {{ 'visible': visibleUpdates }}, glowIndices);
         if (nodeIndices.length > 0) {{
             Plotly.restyle(graphDiv, {{
                 'text': textUpdates, 'marker.symbol': symbolUpdates, 'marker.size': sizeUpdates,
                 'marker.line.width': lineWidthUpdates, 'marker.line.color': lineColorUpdates
             }}, nodeIndices);
         }}
-    }}
-
-    function resetToDefault() {{
-        var ops = graphDiv.data.map(t => t.name === "line_parent" ? 0.3 : (t.name === "line_child" ? 0.45 : (t.name.startsWith("glow") ? 0.2 : 1.0)));
-        var wds = graphDiv.data.map(t => t.name === "line_child" ? 2.5 : (t.name === "line_parent" ? 1.5 : null));
-        Plotly.restyle(graphDiv, {{ 'opacity': ops, 'line.width': wds }});
-        currentHighlighted = null;
     }}
 
     document.addEventListener('keydown', (e) => {{ 
@@ -646,11 +651,15 @@ window.addEventListener('load', function() {{
         if (!data || !data.points) return;
         var pt = data.points[0]; var raw = pt.customdata;
         var name = (raw && typeof raw === 'object') ? (raw.child || raw[0]) : (Array.isArray(raw) ? raw[0] : raw);
-        if (!name) return;
+        if (!name) {{ resetToDefault(); return; }}
         if (currentHighlighted === name) resetToDefault();
         else {{ currentHighlighted = name; highlightLogic(name); }}
     }});
-    graphDiv.addEventListener('mousedown', (e) => {{ if(e.target.classList.contains('nsewdrag')) resetToDefault(); }});
+
+    graphDiv.on('plotly_doubleclick', resetToDefault);
+    graphDiv.addEventListener('click', (e) => {{ 
+        if(e.target.classList.contains('nsewdrag') || e.target.classList.contains('bg')) resetToDefault(); 
+    }});
 }});
 </script>
 """
