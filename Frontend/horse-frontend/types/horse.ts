@@ -1,6 +1,8 @@
+import { ObjectId } from 'mongodb';
+
 // main type representing a horse
 export interface Horse{
-    id: string;
+    id?: string;
     name: string;
     sireName: string;
     sireId: string,

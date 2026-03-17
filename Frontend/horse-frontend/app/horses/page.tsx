@@ -7,10 +7,11 @@ import { Edge } from '@xyflow/react';
 
 export default async function HomePage() {
   const horses: Horse[] = await getAllHorses();
+
   // console.log(horses)
   
   const initialNodes: HorseNode[] = horses.map((h) => ({
-  id: h.id,
+  id: h.id?.toString()!,
   type: 'horseNode',
   data: { 
     horse: h,
@@ -26,7 +27,7 @@ export default async function HomePage() {
     connections.push({
       id: `e-${h.sireName}-${h.id}`,
       source: h.sireId,
-      target: h.id,
+      target: h.id?.toString()!,
       animated: true,
     });
   }
@@ -35,7 +36,7 @@ export default async function HomePage() {
     connections.push({
       id: `e-${h.damName}-${h.id}`,
       source: h.damId,
-      target: h.id,
+      target: h.id?.toString()!,
     });
   }
   

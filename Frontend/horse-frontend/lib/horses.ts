@@ -1,31 +1,41 @@
-import fs from 'fs';
-import path from 'path';
-import Papa from 'papaparse';
+import clientPromise from './mongodb';
 
 import { Horse } from '@/types/horse';
 
 export async function getAllHorses(): Promise<Horse[]>{
-    const filePath = path.join(process.cwd(), 'data/horse_data.csv');
-    const fileContent = fs.readFileSync(filePath, 'utf8');
+    try {
+        const db_name = process.env.DB_NAME;
+        const collection_name = process.env.COLLECTION_NAME;
+        if (!db_name || !collection_name){
+            return []
+        }
 
-    const { data } = Papa.parse(fileContent, {
-        header: true,
-        skipEmptyLines: true
-    });
+        const client = await clientPromise;
+        const db = client.db(db_name);
 
-    return data.map((row: any) => ({
-        id: String(row.id).trim(),
-        name: row.Name,
-        sireId: row['parent id 1'],
-        damId: row['parent id 2'],
-        sireName: row.Parent1 || undefined,
-        damName: row.Parent2 || undefined,
-        status: row.Status ? row.Status === "Dead" ? 0 : 1 : undefined,
-        speed: row.Speed ? parseFloat(row.Speed) : undefined,
-        jump: row.Jump ? parseFloat(row.jump) : undefined,
-        health: row.Health ? parseFloat(row.health) : undefined,
-        appearance: row.Appearance
-    }));
+        const data = await db
+            .collection(collection_name)
+            .find({})
+            .toArray();
+
+        // We map the Mongo documents to your existing Horse interface
+        return data.map((row: any) => ({
+            id: String(row._id).trim(),
+            name: row.Name || row.name,
+            sireId: row['parent id 1'] || row.sireId,
+            damId: row['parent id 2'] || row.damId,
+            sireName: row.Parent1 || row.sireName,
+            damName: row.Parent2 || row.damName,
+            status: row.Status === "Dead" ? 0 : 1,
+            speed: row.Speed ? parseFloat(row.Speed) : undefined,
+            jump: row.Jump ? parseFloat(row.Jump) : undefined,
+            health: row.Health ? parseFloat(row.Health) : undefined,
+            appearance: row.Appearance
+        }));
+    } catch (error) {
+        console.error("Database error:", error);
+        return [];
+    }
 }
 
 export async function getHorseById(id: string): Promise<Horse | undefined>{
