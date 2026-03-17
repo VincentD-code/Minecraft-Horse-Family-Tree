@@ -11,7 +11,7 @@ export default async function HomePage() {
   // console.log(horses)
   
   const initialNodes: HorseNode[] = horses.map((h) => ({
-  id: h.id?.toString()!,
+  id: h.id.toString(),
   type: 'horseNode',
   data: { 
     horse: h,
@@ -27,7 +27,7 @@ export default async function HomePage() {
     connections.push({
       id: `e-${h.sireName}-${h.id}`,
       source: h.sireId,
-      target: h.id?.toString()!,
+      target: h.id?.toString(),
       animated: true,
     });
   }
@@ -36,7 +36,7 @@ export default async function HomePage() {
     connections.push({
       id: `e-${h.damName}-${h.id}`,
       source: h.damId,
-      target: h.id?.toString()!,
+      target: h.id?.toString(),
     });
   }
   

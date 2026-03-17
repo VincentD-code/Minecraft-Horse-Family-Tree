@@ -31,7 +31,7 @@ export default function HorseTreeView({ initialNodes, initialEdges }: HorseTreeV
   const router = useRouter()
 
   const onNodesChange: OnNodesChange = (changes) =>
-  setNodes((nds) => applyNodeChanges<HorseNode>(changes as any as NodeChange<HorseNode>[], nds));
+  setNodes((nds) => applyNodeChanges<HorseNode>(changes as NodeChange<HorseNode>[], nds));
     
   const onEdgesChange: OnEdgesChange = (changes) => 
     setEdges((eds) => applyEdgeChanges(changes, eds));
