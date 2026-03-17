@@ -1,8 +1,8 @@
 import { getAllHorses } from '@/lib/horses';
-import HorseTreeView from '@/components/HorseTreeView';
+import HorseTreeView from '@/components/HorseTreeView/HorseTreeView';
 import { getLayoutedElements } from '@/lib/layout';
 import { Horse } from '@/types/horse';
-import { HorseNode } from '@/components/HorseNode';
+import { HorseNode } from '@/components/HorseNode/HorseNode';
 import { Edge } from '@xyflow/react';
 
 export default async function HomePage() {

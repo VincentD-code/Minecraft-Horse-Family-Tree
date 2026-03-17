@@ -1,6 +1,6 @@
 import dagre from 'dagre';
 import { Node, Edge } from '@xyflow/react';
-import { HorseNode } from '@/components/HorseNode';
+import { HorseNode } from '@/components/HorseNode/HorseNode';
 
 const dagreGraph = new dagre.graphlib.Graph();
 dagreGraph.setDefaultEdgeLabel(() => ({}));
