@@ -13,6 +13,7 @@
     "@vanilla-extract/css": "^1.19.0",
     "@xyflow/react": "^12.10.1",
     "dagre": "^0.8.5",
+    "mongodb": "^7.1.0",
     "next": "16.1.6",
     "papaparse": "^5.5.3",
     "react": "19.2.3",
