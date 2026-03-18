@@ -14,6 +14,17 @@ export interface Horse{
     health: number | undefined;
 }
 
+export interface createHorseRequest{
+    name: string;
+    sireName: string;
+    sireId: string;
+    damName: string;
+    status: number;
+    speed: number;
+    jump: number;
+    health: number;
+}
+
 // type used in the home page nodes
 export interface HorseNodeData {
     labels: string;
