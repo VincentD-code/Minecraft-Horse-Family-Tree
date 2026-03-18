@@ -8,9 +8,10 @@ export interface Horse{
     sireId: string,
     damId: string,
     damName: string;
+    variant_id: string;
     status: number | undefined;
-    speed: number | undefined;
-    jump: number | undefined;
+    speed_raw: number | undefined;
+    jump_raw: number | undefined;
     health: number | undefined;
 }
 

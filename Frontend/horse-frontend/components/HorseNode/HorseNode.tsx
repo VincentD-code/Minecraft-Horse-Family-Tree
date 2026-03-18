@@ -21,7 +21,7 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
       <div className="flex flex-col items-center">
         <div className="text-sm font-bold text-gray-800">{horse.name}</div>
         <div className="text-[10px] text-gray-500 italic">
-            speed: {horse.speed}
+            speed: {horse.speed_raw}
         </div>
       </div>
 

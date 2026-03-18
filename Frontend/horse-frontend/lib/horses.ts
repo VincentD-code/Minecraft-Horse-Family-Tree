@@ -21,16 +21,16 @@ export async function getAllHorses(): Promise<Horse[]>{
         // We map the Mongo documents to your existing Horse interface
         return data.map((row: any) => ({
             id: String(row._id).trim(),
-            name: row.Name || row.name,
-            sireId: row['parent id 1'] || row.sireId,
-            damId: row['parent id 2'] || row.damId,
-            sireName: row.Parent1 || row.sireName,
-            damName: row.Parent2 || row.damName,
-            status: row.Status === "Dead" ? 0 : 1,
-            speed: row.Speed ? parseFloat(row.Speed) : undefined,
-            jump: row.Jump ? parseFloat(row.Jump) : undefined,
-            health: row.Health ? parseFloat(row.Health) : undefined,
-            appearance: row.Appearance
+            name: row.name || row.name,
+            sireId: row['parent_id_1'] || row.sireId,
+            damId: row['parent_id_2'] || row.damId,
+            sireName: row.parent_1 || row.sireName,
+            damName: row.parent_2 || row.damName,
+            status: row.status === "Dead" ? 0 : 1,
+            speed_raw: row.speed_raw ? parseFloat(row.speed_raw) : undefined,
+            jump_raw: row.jump_raw ? parseFloat(row.jump_raw) : undefined,
+            health: row.health ? parseFloat(row.health) : undefined,
+            variant_id: row.variant_id
         }));
     } catch (error) {
         console.error("Database error:", error);
