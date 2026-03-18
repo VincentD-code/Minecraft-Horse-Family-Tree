@@ -16,13 +16,14 @@ export interface Horse{
 
 export interface createHorseRequest{
     name: string;
-    sireName: string;
     sireId: string;
-    damName: string;
+    damId: string;
     status: number;
     speed: number;
     jump: number;
     health: number;
+    temper: number;
+    variant: string;
 }
 
 // type used in the home page nodes
