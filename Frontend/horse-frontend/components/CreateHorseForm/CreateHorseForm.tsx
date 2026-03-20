@@ -5,6 +5,7 @@ import { HorseStats, parseHorseStats } from "@/utils/parseHorseStats";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Select from "react-select";
+import * as styles from "./CreateHorseForm.css";
 export interface CreateHorseFormProps {
   horses: Horse[];
 }
@@ -22,18 +23,40 @@ export default function CreateHorseForm({ horses }: CreateHorseFormProps) {
     setStats(parsed);
     setError(!parsed && e.target.value.length > 0);
   };
-  const options = horses.map((horse) => ({ value: horse.id.toString(), label: horse.name }));
+  const parentOptions = horses.map((horse) => ({
+    value: horse.id.toString(),
+    label: horse.name,
+  }));
+  const statusOptions = [
+    { value: "Alive", label: "Alive" },
+    { value: "Dead", label: "Dead" },
+  ];
 
   return (
     <>
-      <form action={createHorseAction}>
-        <input name="name" placeholder="Name" />
-        <Select options={options} placeholder="Parent 1" name="sireId"/>
-        <Select options={options} placeholder="Parent 2" name="damId"/>
-        <select name="status">
-          <option value="Alive">Alive</option>
-          <option value="Dead">Dead</option>
-        </select>
+    <button onClick={onBack}>Back</button>
+      <form action={createHorseAction} className={styles.container}>
+        <div className={styles.row}>
+          <input name="name" placeholder="Name" className={styles.field} />
+          <Select
+            options={parentOptions}
+            placeholder="Parent 1"
+            name="sireId"
+            className={styles.field}
+          />
+          <Select
+            options={parentOptions}
+            placeholder="Parent 2"
+            name="damId"
+            className={styles.field}
+          />
+          <Select
+            options={statusOptions}
+            placeholder="Status"
+            name="status"
+            className={styles.field}
+          />
+        </div>
 
         <textarea
           placeholder="Paste /summon stats here..."
@@ -63,7 +86,6 @@ export default function CreateHorseForm({ horses }: CreateHorseFormProps) {
           Create
         </button>
       </form>
-      <button onClick={onBack}>Back</button>
     </>
   );
 }
