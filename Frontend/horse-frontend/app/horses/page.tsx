@@ -1,3 +1,4 @@
+"use server"
 import { getAllHorses } from '@/lib/horses';
 import HorseTreeView from '@/components/HorseTreeView/HorseTreeView';
 import { getLayoutedElements } from '@/lib/layout';
@@ -23,18 +24,18 @@ export default async function HomePage() {
   const initialEdges: Edge[] = horses.flatMap((h) => {
   const connections: Edge[] = [];
   
-  if (h.sireName) {
+  if (h.sireId) {
     connections.push({
-      id: `e-${h.sireName}-${h.id}`,
+      id: `e-${h.sireId}-${h.id}`,
       source: h.sireId,
       target: h.id?.toString(),
       animated: true,
     });
   }
   
-  if (h.damName) {
+  if (h.damId) {
     connections.push({
-      id: `e-${h.damName}-${h.id}`,
+      id: `e-${h.damId}-${h.id}`,
       source: h.damId,
       target: h.id?.toString(),
     });
@@ -42,6 +43,7 @@ export default async function HomePage() {
   
   return connections;
 });
+console.log(initialEdges);
 
   const { nodes, edges } = getLayoutedElements(initialNodes, initialEdges);
 

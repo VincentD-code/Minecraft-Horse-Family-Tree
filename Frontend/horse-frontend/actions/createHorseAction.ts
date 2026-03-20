@@ -10,9 +10,8 @@ export default async function createHorseAction(formData: FormData) {
     status: formData.get("status") === "Alive" ? 1 : 0,
     speed: parseFloat(formData.get("speed") as string),
     health: parseFloat(formData.get("health") as string),
-    temper: parseInt(formData.get("temper") as string),
     jump: parseFloat(formData.get("jump") as string),
-    variant: formData.get("variant") as string,
+    variant: parseFloat(formData.get("variant") as string),
   };
   await createHorse(data);
 }
