@@ -43,7 +43,6 @@ export default async function HomePage() {
   
   return connections;
 });
-console.log(initialEdges);
 
   const { nodes, edges } = getLayoutedElements(initialNodes, initialEdges);
 

@@ -28,10 +28,10 @@ export async function getAllHorses(): Promise<Horse[]>{
             sireName: row.Parent1 || row.sireName,
             damName: row.Parent2 || row.damName,
             status: row.Status === "Dead" ? 0 : 1,
-            speed: row.Speed ? parseFloat(row.Speed) : undefined,
-            jump: row.Jump ? parseFloat(row.Jump) : undefined,
-            health: row.Health ? parseFloat(row.Health) : undefined,
-            appearance: row.Appearance
+            speed: parseFloat(row.speed),
+            jump: parseFloat(row.jump),
+            health: parseFloat(row.health),
+            variant: parseFloat(row.variant),
         }));
     } catch (error) {
         console.error("Database error:", error);

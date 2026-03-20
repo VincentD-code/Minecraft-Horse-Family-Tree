@@ -1,17 +1,14 @@
-import { ObjectId } from 'mongodb';
-
 // main type representing a horse
 export interface Horse{
     id: string;
     name: string;
-    sireName: string;
-    sireId: string,
-    damId: string,
-    damName: string;
-    status: number | undefined;
-    speed: number | undefined;
-    jump: number | undefined;
-    health: number | undefined;
+    sireId?: string,
+    damId?: string,
+    status: number;
+    speed: number;
+    jump: number;
+    health: number;
+    variant: number;
 }
 
 export interface createHorseRequest{
