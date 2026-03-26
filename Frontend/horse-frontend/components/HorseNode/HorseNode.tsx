@@ -1,5 +1,6 @@
 import { Handle, Position, NodeProps, Node } from '@xyflow/react';
 import { Horse } from '@/types/horse';
+import { translateStatsForDisplay } from '@/utils/translateRawStats';
 
 export type HorseNodeData = {
   horse: Horse;
@@ -11,6 +12,8 @@ export type HorseNode = Node<HorseNodeData, 'horseNode'>;
 
 export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
   const { horse } = data;
+  const {jump, health, speed, variant} = horse;
+  const processedStats = translateStatsForDisplay({jump, health, speed, variant})
 
   const borderColor = 'border-gray-400';
 
@@ -21,7 +24,7 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
       <div className="flex flex-col items-center">
         <div className="text-sm font-bold text-gray-800">{horse.name}</div>
         <div className="text-[10px] text-gray-500 italic">
-            speed: {horse.speed}
+            speed: {processedStats.speed}
         </div>
       </div>
 
