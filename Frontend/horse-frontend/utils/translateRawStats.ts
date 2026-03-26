@@ -36,12 +36,17 @@ function decodeVariant(variantId: number): string {
   return `${color} w/ ${pattern}`;
 }
 
-export function translateStatsForDisplay(stats: RawStats): ProcessedStats{
-    const speed = Math.round(stats.speed * 42.157 * 2) / 2;
-    const jump = Math.round(((7.56889 * (Math.E ** (0.602676*stats.jump))) - 8.59434) * 2) / 2
-    // jump = (5.42044 * (stats.jump ** (1.61929))) - 0.13636
-    const variant = decodeVariant(stats.variant);
-    const health = Math.round((stats.health / 2) * 2) / 2;
+export function translateStatsForDisplay(stats: RawStats): ProcessedStats {
 
-    return {speed, jump, variant, health}
+    const rawSpeed = stats.speed * 42.157;
+    const rawJump = (7.56889 * (Math.E ** (0.602676 * stats.jump))) - 8.59434;
+    const rawHealth = stats.health / 2;
+
+    const speed = Number(rawSpeed.toFixed(4));
+    const jump = Number(rawJump.toFixed(4));
+    const health = Number(rawHealth.toFixed(4));
+    
+    const variant = decodeVariant(stats.variant);
+
+    return { speed, jump, variant, health };
 }
