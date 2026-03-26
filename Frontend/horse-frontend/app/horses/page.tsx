@@ -1,4 +1,4 @@
-"use server"
+export const dynamic = 'force-dynamic';
 import { getAllHorses } from '@/lib/horses';
 import HorseTreeView from '@/components/HorseTreeView/HorseTreeView';
 import { getLayoutedElements } from '@/lib/layout';
