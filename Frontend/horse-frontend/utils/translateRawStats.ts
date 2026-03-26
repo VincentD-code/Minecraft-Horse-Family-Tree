@@ -38,14 +38,9 @@ function decodeVariant(variantId: number): string {
 
 export function translateStatsForDisplay(stats: RawStats): ProcessedStats {
 
-    const rawSpeed = stats.speed * 42.157;
-    const rawJump = (7.56889 * (Math.E ** (0.602676 * stats.jump))) - 8.59434;
-    const rawHealth = stats.health / 2;
-
-    const speed = Number(rawSpeed.toFixed(4));
-    const jump = Number(rawJump.toFixed(4));
-    const health = Number(rawHealth.toFixed(4));
-    
+    const speed = Number((stats.speed * 42.157).toFixed(4));
+    const jump = Number(((7.56889 * Math.E ** (0.602676 * stats.jump)) - 8.59434).toFixed(4));
+    const health = Number((stats.health / 2).toFixed(4));
     const variant = decodeVariant(stats.variant);
 
     return { speed, jump, variant, health };
