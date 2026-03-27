@@ -9,6 +9,7 @@ export interface Horse{
     jump: number;
     health: number;
     variant: number;
+    generation: number;
 }
 
 export interface createHorseRequest{

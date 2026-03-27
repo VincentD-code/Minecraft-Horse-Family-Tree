@@ -23,6 +23,7 @@ export default function HorsePage({ horse }: {horse: Horse}){
                 <p><strong>Jump:</strong> {processedStats.jump ? processedStats.jump.toFixed(2) : 'N/A'} [blocks]</p>
                 <p><strong>Health:</strong> {processedStats.health ? processedStats.health.toFixed(2) : 'N/A'} [hearts]</p>
                 <p><strong>Variant:</strong> {processedStats.variant}</p>
+                <p><strong>Generation:</strong> {horse.generation}</p>
             </div>
         </main>
     )
