@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { getAllHorses } from '@/lib/horses';
 import HorseTreeView from '@/components/HorseTreeView/HorseTreeView';
-import { getLayoutedElements } from '@/lib/layout';
+import { getBaseLayout } from "@/lib/layout";
 import { Horse } from '@/types/horse';
 import { HorseNode } from '@/components/HorseNode/HorseNode';
 import { Edge } from '@xyflow/react';
@@ -44,7 +44,8 @@ export default async function HomePage() {
   return connections;
 });
 
-  const { nodes, edges } = getLayoutedElements(initialNodes, initialEdges);
+  const nodes = getBaseLayout(initialNodes, initialEdges);
+  const edges = initialEdges;
 
   const dataKey = `tree-${horses.length}`;
 
