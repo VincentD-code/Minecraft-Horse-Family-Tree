@@ -10,7 +10,14 @@ export interface Horse{
     health: number;
     variant: number;
     generation: number;
+    originBlood?: string; 
+    hexColor?: string;
+    bloodlines?: BloodlineMap;
 }
+
+export type BloodlineMap = {
+  [key: string]: number;
+};
 
 export interface createHorseRequest{
     name: string;

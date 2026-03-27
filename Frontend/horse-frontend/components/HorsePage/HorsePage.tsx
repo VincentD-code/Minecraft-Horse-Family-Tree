@@ -3,6 +3,7 @@ import { Horse } from "@/types/horse";
 import { useRouter } from "next/navigation";
 import * as styles from './HorsePage.css';
 import { translateStatsForDisplay } from "@/utils/translateRawStats";
+import { BloodlineDisplay } from "./BloodlineDisplay";
 
 export default function HorsePage({ horse }: {horse: Horse}){
     const router = useRouter();
@@ -24,7 +25,17 @@ export default function HorsePage({ horse }: {horse: Horse}){
                 <p><strong>Health:</strong> {processedStats.health ? processedStats.health.toFixed(2) : 'N/A'} [hearts]</p>
                 <p><strong>Variant:</strong> {processedStats.variant}</p>
                 <p><strong>Generation:</strong> {horse.generation}</p>
-            </div>
-        </main>
-    )
+                <BloodlineDisplay bloodlines={horse.bloodlines} />
+      </div>
+    </main>
+  );
+}
+
+// A tiny helper for the rows to keep the JSX even cleaner
+function StatRow({ label, value, unit = "" }: { label: string, value: any, unit?: string }) {
+  return (
+    <p>
+      <strong>{label}:</strong> {value ?? 'N/A'} {unit}
+    </p>
+  );
 }

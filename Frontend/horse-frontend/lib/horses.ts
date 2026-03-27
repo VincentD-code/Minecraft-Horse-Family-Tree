@@ -1,6 +1,7 @@
 import { InsertOneResult } from 'mongodb';
 import clientPromise from './mongodb';
 import { createHorseRequest, Horse } from '@/types/horse';
+import { calculateHorseGenetics } from '@/lib/genetics';
 
 export async function getAllHorses(): Promise<Horse[]> {
     try {
@@ -33,6 +34,7 @@ export async function getAllHorses(): Promise<Horse[]> {
             health: parseFloat(row.health) || 0,
             variant: parseFloat(row.variantId) || 0,
             generation: 0, 
+            originBlood: row.originBlood || row.bloodline || row.Bloodline || "Unknown",
         }));
 
         const horseMap = new Map(horseList.map(h => [h.id, h]));
@@ -71,10 +73,17 @@ export async function getAllHorses(): Promise<Horse[]> {
             return currentGen;
         }
 
-        return horseList.map(horse => ({
-            ...horse,
-            generation: calculateGeneration(horse.id)
-        }));
+        return horseList.map(horse => {
+            const gen = calculateGeneration(horse.id);
+            const genetics = calculateHorseGenetics(horse, horseList);
+
+            return {
+                ...horse,
+                generation: gen,
+                bloodlines: genetics.dna,
+                hexColor: genetics.color
+            };
+        });
 
     } catch (error) {
         console.error("Database error:", error);
