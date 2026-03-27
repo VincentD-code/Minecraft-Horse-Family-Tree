@@ -12,16 +12,14 @@ import {
   NodeChange,
 } from "@xyflow/react";
 import { useState, useCallback, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { getBaseLayout, getSortLayout } from "@/lib/layout";
+import { useRouter } from "next/navigation";
+import { getCookie, setCookie } from "cookies-next";import { getBaseLayout, getSortLayout } from "@/lib/layout";
 import "@xyflow/react/dist/style.css";
 import CustomHorseNode, { HorseNode } from "../HorseNode/HorseNode";
 import AddHorseButton from "../AddHorseButton/AddHorseButton";
+import * as styles from "./HorseTreeView.css";
 
-const nodeTypes = {
-  horseNode: CustomHorseNode,
-};
-
+const nodeTypes = { horseNode: CustomHorseNode };
 type ViewMode = 'base' | 'speed' | 'jump' | 'health';
 
 interface HorseTreeViewProps {
@@ -31,39 +29,34 @@ interface HorseTreeViewProps {
 
 function TreeContent({ initialNodes, initialEdges }: HorseTreeViewProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { fitView } = useReactFlow();
 
-  // 1. Source the ViewMode from the URL, defaulting to 'base'
-  const view = (searchParams.get("view") as ViewMode) || "base";
-
-  const [nodes, setNodes] = useState<HorseNode[]>(() => {
-    // Initial load logic matching the URL state
-    if (view === 'base') return getBaseLayout(initialNodes, initialEdges);
-    return getSortLayout(initialNodes, view as 'speed' | 'jump' | 'health');
+ // 1. Initialize state from Cookie (falling back to 'base')
+  const [view, setView] = useState<ViewMode>(() => {
+    const savedView = getCookie("horse-tree-view") as ViewMode;
+    return savedView || "base";
   });
+
+  const [nodes, setNodes] = useState<HorseNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
 
-  // 2. Sync layout whenever the view (from URL) or initial data changes
+  // 2. Update layout when the view state changes
   useEffect(() => {
-    let newNodes: HorseNode[];
-    if (view === 'base') {
-      newNodes = getBaseLayout(initialNodes, initialEdges);
-    } else {
-      newNodes = getSortLayout(initialNodes, view as 'speed' | 'jump' | 'health');
-    }
+    const newNodes = view === 'base' 
+      ? getBaseLayout(initialNodes, initialEdges) 
+      : getSortLayout(initialNodes, view);
+    
     setNodes(newNodes);
     setEdges(initialEdges);
   }, [view, initialNodes, initialEdges]);
 
-  // 3. Instead of local state, we push the new mode to the URL
+  // 3. Update state AND cookie when toggling
   const toggleView = (mode: ViewMode) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("view", mode);
-    router.push(`${pathname}?${params.toString()}`);
+    setView(mode);
+    setCookie("horse-tree-view", mode, { maxAge: 60 * 60 * 24 * 30 }); // Save for 30 days
     
-    setTimeout(() => fitView({ duration: 800 }), 100);
+    // Smooth transition
+    setTimeout(() => fitView({ duration: 800 }), 50);
   };
 
   const onNodesChange: OnNodesChange = useCallback(
@@ -76,31 +69,26 @@ function TreeContent({ initialNodes, initialEdges }: HorseTreeViewProps) {
     []
   );
 
-  return (
-    <div className="w-full h-full relative">
+return (
+    <div className={styles.container}>
       {/* Floating Menu */}
-      <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 bg-white p-3 rounded-lg shadow-xl border border-gray-200 w-64">
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Layout Mode</p>
+      <div className={styles.menuWrapper}>
+        <p className={styles.menuLabel}>Layout Mode</p>
         
-        {/* Main Toggles */}
         <button 
           onClick={() => toggleView('base')}
-          className={`w-full py-2 rounded-md text-xs font-bold transition-all mb-1 ${
-            view === 'base' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
+          className={view === 'base' ? styles.baseButtonActive : styles.baseButtonInactive}
         >
           Traditional Lineage Tree
         </button>
 
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">Rank by Stat (Left to Right)</p>
-        <div className="grid grid-cols-3 gap-1">
+        <p className={styles.menuLabel} style={{ marginTop: '8px' }}>Rank by Stat (Left to Right)</p>
+        <div className={styles.statGrid}>
           {(['speed', 'jump', 'health'] as const).map((stat) => (
             <button
               key={stat}
               onClick={() => toggleView(stat)}
-              className={`py-2 rounded text-[10px] font-bold capitalize transition-all ${
-                view === stat ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-              }`}
+              className={view === stat ? styles.statButtonActive : styles.statButtonInactive}
             >
               {stat}
             </button>
@@ -109,7 +97,7 @@ function TreeContent({ initialNodes, initialEdges }: HorseTreeViewProps) {
         
         <button 
           onClick={() => fitView({ duration: 800, padding: 0.2 })}
-          className="mt-4 w-full px-3 py-2 bg-gray-800 text-white text-xs font-bold rounded-md hover:bg-black flex items-center justify-center gap-2"
+          className={styles.resetButton}
         >
           🔍 Reset Zoom
         </button>
@@ -136,7 +124,7 @@ function TreeContent({ initialNodes, initialEdges }: HorseTreeViewProps) {
 export default function HorseTreeView(props: HorseTreeViewProps) {
   return (
     <ReactFlowProvider>
-      <Suspense fallback={<div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-400 font-medium">Loading lineage...</div>}>
+      <Suspense fallback={<div className={styles.loadingFallback}>Loading lineage...</div>}>
         <TreeContent {...props} />
       </Suspense>
     </ReactFlowProvider>

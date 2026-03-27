@@ -1,6 +1,7 @@
 import { Handle, Position, NodeProps, Node } from '@xyflow/react';
 import { Horse } from '@/types/horse';
 import { translateStatsForDisplay } from '@/utils/translateRawStats';
+import * as styles from './HorseNode.css';
 
 export type HorseNodeData = {
   horse: Horse;
@@ -33,19 +34,27 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
   const display = getDisplayStat();
 
   return (
-    <div className="px-4 py-2 shadow-md rounded-md bg-white border-2 border-gray-400 min-w-[150px]">
-      <Handle type="target" position={Position.Top} className="w-2 h-2 !bg-gray-400" />
+    <div className={styles.nodeContainer}>
+      <Handle 
+        type="target" 
+        position={Position.Top} 
+        className={styles.handleStyle} 
+      />
       
-      <div className="flex flex-col items-center">
-        <div className="text-sm font-bold text-gray-800 whitespace-nowrap">
+      <div className={styles.contentWrapper}>
+        <div className={styles.horseName}>
           {horse.name}
         </div>
-        <div className="text-[10px] text-gray-500 italic normal-case">
+        <div className={styles.statText}>
           {display.label}: {display.value}
         </div>
       </div>
 
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2 !bg-gray-400" />
+      <Handle 
+        type="source" 
+        position={Position.Bottom} 
+        className={styles.handleStyle} 
+      />
     </div>
   );
 }
