@@ -4,7 +4,7 @@ export const container = style({
   margin: 10,
   padding: 10,
   borderRadius: 8,
-  backgroundColor: "#E0E0E0"
+  backgroundColor: "#4b5563"
 });
 
 export const row = style({
