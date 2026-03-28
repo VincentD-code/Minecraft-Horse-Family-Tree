@@ -1,5 +1,5 @@
 "use client";
-import createHorseAction from "@/actions/createHorseAction";
+import { createHorseAction } from "@/actions/createHorseAction";
 import { Horse } from "@/types/horse";
 import { HorseStats, parseHorseStats } from "@/utils/parseHorseStats";
 import { useRouter } from "next/navigation";
