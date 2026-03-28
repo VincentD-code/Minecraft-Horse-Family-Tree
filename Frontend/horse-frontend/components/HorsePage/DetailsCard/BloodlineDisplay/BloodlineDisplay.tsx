@@ -1,6 +1,6 @@
 import { Horse } from "@/types/horse";
 import { BLOODLINE_COLORS } from "@/utils/genetics";
-import * as styles from '../BloodlineDisplay/BloodlineDisplay.css';
+import * as styles from './BloodlineDisplay.css';
 
 interface BloodlineDisplayProps {
   bloodlines: Horse['bloodlines'];
