@@ -8,9 +8,15 @@ import HorsePageHeader from "./HorsePageHeader/HorsePageHeader";
 import StatsShapeGrid from "./StatsShapeGrid/StatsShapeGrid";
 import DetailsCard from "./DetailsCard/DetailsCard";
 import { useState } from "react";
-import HorseEditForm from "./HorseEditForm/HorseEditForm";
+import HorseEditModal from "./HorseEditModal/HorseEditModal";
 
-export default function HorsePage({ horse }: { horse: Horse }) {
+export default function HorsePage({
+  horse,
+  horses,
+}: {
+  horse: Horse;
+  horses: Horse[];
+}) {
   const router = useRouter();
   const [editMode, setEditMode] = useState(false);
 
@@ -42,27 +48,27 @@ export default function HorsePage({ horse }: { horse: Horse }) {
 
       <Button onClick={onEditClick} text="Edit" className={styles.editButton} />
 
-      {editMode ? (
-        <>
-          <HorseEditForm
-            formData={formData}
-            onChange={setFormData}
-            onSubmit={onSubmitChange}
-          />
-        </>
-      ) : (
-        <>
-          <HorsePageHeader horse={horse} horseColor={horseColor} />
+      <HorseEditModal
+        horse={horse}
+        horses={horses}
+        isOpen={editMode}
+        onClose={() => setEditMode(false)}
+        onSave={(updatedHorse) => {
+          setFormData(updatedHorse);
+          setEditMode(false);
+        }}
+        processedStats={processedStats}
+      />
 
-          <StatsShapeGrid
-            horse={horse}
-            processedStats={processedStats}
-            horseColor={horseColor}
-          />
+      <HorsePageHeader horse={horse} horseColor={horseColor} />
 
-          <DetailsCard horse={horse} processedStats={processedStats} />
-        </>
-      )}
+      <StatsShapeGrid
+        horse={horse}
+        processedStats={processedStats}
+        horseColor={horseColor}
+      />
+
+      <DetailsCard horse={horse} processedStats={processedStats} />
     </main>
   );
 }

@@ -32,6 +32,18 @@ export interface createHorseRequest{
     variant: number;
 }
 
+export interface editHorseRequest{
+    id: string;
+    name?: string;
+    sireId?: string;
+    damId?: string;
+    status: number;
+    speed: number;
+    jump: number;
+    health: number;
+    variant: number;
+}
+
 // type used in the home page nodes
 export interface HorseNodeData {
     labels: string;

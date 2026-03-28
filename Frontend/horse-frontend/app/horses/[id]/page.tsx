@@ -1,5 +1,5 @@
 import HorsePage from '@/components/HorsePage/HorsePage';
-import { getHorseById } from '@/lib/horses'
+import { getAllHorses, getHorseById } from '@/lib/horses'
 import { notFound } from 'next/navigation';
 
 interface PageProps {
@@ -9,10 +9,11 @@ interface PageProps {
 export default async function getHorsePage({ params }: PageProps){
     const { id } = await params
     const horse = await getHorseById(id);
+    const horses = await getAllHorses();
 
-    if (!horse) {
+    if (!horse || !horses) {
         notFound();
     }
 
-    return <HorsePage horse={horse}/>
+    return <HorsePage horse={horse} horses={horses} />
 }

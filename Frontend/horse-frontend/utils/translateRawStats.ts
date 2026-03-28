@@ -36,6 +36,29 @@ function decodeVariant(variantId: number): string {
   return `${color} w/ ${pattern}`;
 }
 
+export function encodeVariant(variant: string): number {
+  const [colorPart, patternPart] = variant.split(" w/ ");
+  const colorMap: Record<string, number> = {
+    "White": 0,
+    "Creamy": 1,
+    "Chestnut": 2,
+    "Brown": 3,
+    "Black": 4,
+    "Gray": 5,
+    "Dark Brown": 6
+  };
+  const patternMap: Record<string, number> = {
+    "None": 0,
+    "White Stockings": 1,
+    "White Field": 2,
+    "White Dots": 3,
+    "Black Dots": 4
+  };
+  const colorId = colorMap[colorPart] ?? 0;
+  const patternId = patternMap[patternPart] ?? 0;
+  return colorId + patternId * 256;
+}
+
 export function translateStatsForDisplay(stats: RawStats): ProcessedStats {
 
     const speed = Number((stats.speed * 42.157).toFixed(4));
@@ -44,4 +67,17 @@ export function translateStatsForDisplay(stats: RawStats): ProcessedStats {
     const variant = decodeVariant(stats.variant);
 
     return { speed, jump, variant, health };
+}
+
+export function untranslateStat(field: string, value: number): number {
+    switch (field) {
+        case "speed":
+            return Number((value / 42.157).toFixed(4));
+        case "jump":
+            return Number((Math.log((value + 8.59434) / 7.56889) / 0.602676).toFixed(4));
+        case "health":
+            return Number((value * 2).toFixed(4));
+        default:
+            return value;
+    }
 }
