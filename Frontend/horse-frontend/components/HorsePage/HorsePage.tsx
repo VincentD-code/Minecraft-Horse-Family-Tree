@@ -31,40 +31,61 @@ export default function HorsePage({ horse }: { horse: Horse }) {
         </span>
       </header>
 
-      <div className={styles.statsGrid}>
-        <StatCard 
+      <div className={styles.statsShapeGrid}>
+        <StatShapeCard 
           label="Speed" 
           value={processedStats.speed?.toFixed(2)} 
           unit="bps" 
-          subtext="Blocks per second"
+          shapeId="speed"
+          horseColor={horseColor}
         />
-        <StatCard 
+        <StatShapeCard 
           label="Jump" 
           value={processedStats.jump?.toFixed(2)} 
           unit="blocks" 
-          subtext="Max height"
+          shapeId="jump"
+          horseColor={horseColor}
         />
-        <StatCard 
+        <StatShapeCard 
           label="Health" 
           value={processedStats.health?.toFixed(2)} 
           unit="hearts" 
-          subtext="Total vitality"
+          shapeId="health"
+          horseColor={horseColor}
         />
-        <StatCard 
+        <StatShapeCard 
           label="Generation" 
           value={horse.generation} 
-          subtext="Lineage depth"
+          subtext="LINEAGE DEPTH"
+          shapeId="generation"
+          horseColor={horseColor}
         />
       </div>
 
       <section className={styles.detailsSection}>
         <div className={styles.detailRow}>
-          <strong>Appearance</strong>
-          <span>{processedStats.variant}</span>
+          <strong>Appearance Variant</strong>
+          <span>{processedStats.variant|| "Standard"}</span>
         </div>
+        
+        <div className={styles.lineageSection}>
+          <h3 className={styles.sectionTitle}>Parentage</h3>
+          <div className={styles.parentGrid}>
+            <div className={styles.parentBox}>
+              <small className={styles.parentLabel}>Parent 1</small>
+              <p className={styles.parentName}> {horse.sireName || "Unknown"}</p>
+            </div>
+            <div className={styles.parentBox}>
+              <small className={styles.parentLabel}>Parent 2</small>
+              <p className={styles.parentName}> {horse.damName || "Unknown"}</p>
+            </div>
+          </div>
+        </div>
+
         <hr className={styles.divider} />
+        
         <div className={styles.bloodlineWrapper}>
-          <h3 className={styles.sectionTitle}>Bloodline Genealogy</h3>
+          <h3 className={styles.sectionTitle}>Genetic Composition</h3>
           <BloodlineDisplay bloodlines={horse.bloodlines} />
         </div>
       </section>
@@ -72,14 +93,20 @@ export default function HorsePage({ horse }: { horse: Horse }) {
   );
 }
 
-function StatCard({ label, value, unit, subtext }: { label: string; value: any; unit?: string; subtext?: string }) {
+function StatShapeCard({ label, value, unit, subtext, shapeId, horseColor }: { label: string; value: any; unit?: string; subtext?: string; shapeId: string; horseColor: string; }) {
   return (
-    <div className={styles.statCard}>
-      <span className={styles.statLabel}>{label}</span>
-      <div className={styles.statValue}>
-        {value ?? "N/A"} <small className={styles.statUnit}>{unit}</small>
+    <div 
+      className={styles.shapeCard} 
+      data-shape={shapeId}
+      style={{ '--shape-color': horseColor } as React.CSSProperties} 
+    >
+      <div className={styles.shapeTextContainer}>
+        <div className={styles.shapeLabel}>{label}</div>
+        <div className={styles.shapeValue}>
+          {value ?? "N/A"}<small className={styles.shapeUnit}> {unit}</small>
+        </div>
+        {subtext && <div className={styles.shapeSubtext}>{subtext}</div>}
       </div>
-      {subtext && <span className={styles.statSubtext}>{subtext}</span>}
     </div>
   );
 }
