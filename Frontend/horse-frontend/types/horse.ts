@@ -4,6 +4,8 @@ export interface Horse{
     name: string;
     sireId?: string,
     damId?: string,
+    sireName?: string; 
+    damName?: string;
     status: number;
     speed: number;
     jump: number;
