@@ -23,43 +23,58 @@ export const backButton = style({
 });
 
 export const bloodlineSection = style({
-  marginTop: "24px",
-  maxWidth: "400px",
+  marginTop: "12px",
+});
+
+export const bloodlineHeading = style({
+  fontSize: "16px",
+  fontWeight: 600,
+  color: "#475569",
+  marginBottom: "16px",
+  letterSpacing: "-0.01em",
 });
 
 export const bloodlineList = style({
   display: "flex",
   flexDirection: "column",
-  gap: "12px",
-  marginTop: "12px",
+  gap: "16px",
 });
 
 export const bloodlineRow = style({
   display: "flex",
   flexDirection: "column",
-  gap: "4px",
+  gap: "6px",
 });
 
 export const bloodlineInfo = style({
   display: "flex",
   justifyContent: "space-between",
+  alignItems: "center",
+});
+
+export const bloodlineName = style({
   fontSize: "14px",
+  fontWeight: 600,
+  color: "#1e293b",
+});
+
+export const bloodlinePercent = style({
+  fontSize: "13px",
   fontWeight: 500,
+  color: "#64748b",
+  fontVariantNumeric: "tabular-nums", // Keeps numbers from jumping around
 });
 
 export const progressTrack = style({
   width: "100%",
-  height: "12px", 
-  backgroundColor: "rgba(0, 0, 0, 0.2)", 
-  borderRadius: "6px",
+  height: "8px", 
+  backgroundColor: "#f1f5f9", // Lighter, cleaner track
+  borderRadius: "10px",
   overflow: "hidden",
-  border: "1px solid rgba(255, 255, 255, 0.1)",
-  boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.3)", 
 });
 
 export const progressBar = style({
   height: "100%",
-  borderRadius: "6px",
-  transition: "width 0.6s cubic-bezier(0.4, 0, 0.2, 1)", 
-  borderRight: "1px solid rgba(255, 255, 255, 0.3)", 
+  borderRadius: "10px",
+  transition: "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)", 
 });

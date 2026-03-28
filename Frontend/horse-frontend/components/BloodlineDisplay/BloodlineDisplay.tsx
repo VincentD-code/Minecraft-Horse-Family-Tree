@@ -7,7 +7,6 @@ interface BloodlineDisplayProps {
 }
 
 export function BloodlineDisplay({ bloodlines }: BloodlineDisplayProps) {
-  // Guard clause if data is missing
   if (!bloodlines || Object.keys(bloodlines).length === 0) return null;
 
   // Sort by percentage descending
@@ -15,17 +14,18 @@ export function BloodlineDisplay({ bloodlines }: BloodlineDisplayProps) {
 
   return (
     <div className={styles.bloodlineSection}>
-      <h3 style={{ margin: '20px 0 10px 0' }}>Genetic Composition</h3>
+      <h3 className={styles.bloodlineHeading}>Genetic Composition</h3>
       <div className={styles.bloodlineList}>
         {sorted.map(([name, percent]) => {
-          const color = BLOODLINE_COLORS[name] || BLOODLINE_COLORS["Unknown"];
-          const width = `${(percent * 100).toFixed(1)}%`;
+          const color = BLOODLINE_COLORS[name] || "#94a3b8"; // Fallback to slate
+          const percentageValue = (percent * 100).toFixed(1);
+          const width = `${percentageValue}%`;
 
           return (
             <div key={name} className={styles.bloodlineRow}>
               <div className={styles.bloodlineInfo}>
-                <span>{name}</span>
-                <span>{width}</span>
+                <span className={styles.bloodlineName}>{name}</span>
+                <span className={styles.bloodlinePercent}>{percentageValue}%</span>
               </div>
               <div className={styles.progressTrack}>
                 <div 

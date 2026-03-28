@@ -5,70 +5,81 @@ import * as styles from "./HorsePage.css";
 import { translateStatsForDisplay } from "@/utils/translateRawStats";
 import { BloodlineDisplay } from "../BloodlineDisplay/BloodlineDisplay";
 
+
 export default function HorsePage({ horse }: { horse: Horse }) {
   const router = useRouter();
-  const onBackClick = () => {
-    router.back();
-  };
-
+  const onBackClick = () => {router.back();};
+  const horseColor = horse.hexColor || "#1e293b";
   const { jump, health, speed, variant } = horse;
-  const processedStats = translateStatsForDisplay({
-    jump,
-    health,
-    speed,
-    variant,
-  });
+  const processedStats = translateStatsForDisplay({ jump, health, speed, variant });
 
   return (
-    <main>
+    <main className={styles.pageWrapper}>
       <button className={styles.backButton} onClick={onBackClick}>
-        Back
+        ← Back
       </button>
-      <h1 className={styles.heading}>{horse.name}</h1>
-      <div className={styles.container}>
-        <p>
-          <strong>Status:</strong> {horse.status === 0 ? "Dead" : "Alive"}
-        </p>
-        <p>
-          <strong>Speed:</strong>{" "}
-          {processedStats.speed ? processedStats.speed.toFixed(2) : "N/A"}{" "}
-          [blocks per second]
-        </p>
-        <p>
-          <strong>Jump:</strong>{" "}
-          {processedStats.jump ? processedStats.jump.toFixed(2) : "N/A"}{" "}
-          [blocks]
-        </p>
-        <p>
-          <strong>Health:</strong>{" "}
-          {processedStats.health ? processedStats.health.toFixed(2) : "N/A"}{" "}
-          [hearts]
-        </p>
-        <p>
-          <strong>Variant:</strong> {processedStats.variant}
-        </p>
-        <p>
-          <strong>Generation:</strong> {horse.generation}
-        </p>
-        <BloodlineDisplay bloodlines={horse.bloodlines} />
+
+      <header className={styles.header}>
+        <h1 
+          className={styles.heading} 
+          style={{ color: horseColor }}
+        >
+          {horse.name}
+        </h1>
+        <span className={horse.status === 0 ? styles.statusDead : styles.statusAlive}>
+          {horse.status === 0 ? "Deceased" : "Living"}
+        </span>
+      </header>
+
+      <div className={styles.statsGrid}>
+        <StatCard 
+          label="Speed" 
+          value={processedStats.speed?.toFixed(2)} 
+          unit="bps" 
+          subtext="Blocks per second"
+        />
+        <StatCard 
+          label="Jump" 
+          value={processedStats.jump?.toFixed(2)} 
+          unit="blocks" 
+          subtext="Max height"
+        />
+        <StatCard 
+          label="Health" 
+          value={processedStats.health?.toFixed(2)} 
+          unit="hearts" 
+          subtext="Total vitality"
+        />
+        <StatCard 
+          label="Generation" 
+          value={horse.generation} 
+          subtext="Lineage depth"
+        />
       </div>
+
+      <section className={styles.detailsSection}>
+        <div className={styles.detailRow}>
+          <strong>Appearance</strong>
+          <span>{processedStats.variant}</span>
+        </div>
+        <hr className={styles.divider} />
+        <div className={styles.bloodlineWrapper}>
+          <h3 className={styles.sectionTitle}>Bloodline Genealogy</h3>
+          <BloodlineDisplay bloodlines={horse.bloodlines} />
+        </div>
+      </section>
     </main>
   );
 }
 
-// A tiny helper for the rows to keep the JSX even cleaner
-function StatRow({
-  label,
-  value,
-  unit = "",
-}: {
-  label: string;
-  value: any;
-  unit?: string;
-}) {
+function StatCard({ label, value, unit, subtext }: { label: string; value: any; unit?: string; subtext?: string }) {
   return (
-    <p>
-      <strong>{label}:</strong> {value ?? "N/A"} {unit}
-    </p>
+    <div className={styles.statCard}>
+      <span className={styles.statLabel}>{label}</span>
+      <div className={styles.statValue}>
+        {value ?? "N/A"} <small className={styles.statUnit}>{unit}</small>
+      </div>
+      {subtext && <span className={styles.statSubtext}>{subtext}</span>}
+    </div>
   );
 }
