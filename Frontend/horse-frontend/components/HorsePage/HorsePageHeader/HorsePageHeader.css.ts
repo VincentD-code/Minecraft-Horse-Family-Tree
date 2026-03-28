@@ -4,6 +4,7 @@ export const header = style({
   display: "flex",
   alignItems: "center",
   gap: "20px",
+  marginTop: "20px",
   marginBottom: "32px",
 });
 

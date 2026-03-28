@@ -9,6 +9,12 @@ export const pageWrapper = style({
   fontFamily: "Inter, system-ui, sans-serif",
 });
 
+export const backButton = style({
+  position: "absolute",
+  top: "20px",
+  left: "20px",
+})
+
 export const editButton = style({
   position: "absolute",
   top: "20px",
