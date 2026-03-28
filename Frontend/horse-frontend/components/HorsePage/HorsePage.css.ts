@@ -16,4 +16,9 @@ export const backButton = style({
   paddingRight: 16,
   borderRadius: "8px",
   border: "2px solid #3b82f6",
+  cursor: "pointer",
+  ":hover": {
+    backgroundColor: "#eff6ff"
+  }
 });
+

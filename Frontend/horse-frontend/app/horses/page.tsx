@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { getAllHorses } from '@/lib/horses';
 import HorseTreeView from '@/components/HorseTreeView/HorseTreeView';
-import { getBaseLayout } from "@/lib/layout";
+import { getBaseLayout } from "@/utils/layout";
 import { Horse } from '@/types/horse';
 import { HorseNode } from '@/components/HorseNode/HorseNode';
 import { Edge } from '@xyflow/react';
