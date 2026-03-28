@@ -1,7 +1,7 @@
 import { InsertOneResult } from 'mongodb';
 import clientPromise from './mongodb';
 import { createHorseRequest, Horse } from '@/types/horse';
-import { calculateHorseGenetics } from '@/lib/genetics';
+import { calculateHorseGenetics } from '@/utils/genetics'
 
 export async function getAllHorses(): Promise<Horse[]> {
     try {

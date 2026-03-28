@@ -3,7 +3,7 @@ import { Horse } from "@/types/horse";
 import { useRouter } from "next/navigation";
 import * as styles from "./HorsePage.css";
 import { translateStatsForDisplay } from "@/utils/translateRawStats";
-import { BloodlineDisplay } from "./BloodlineDisplay";
+import { BloodlineDisplay } from "../BloodlineDisplay/BloodlineDisplay";
 
 export default function HorsePage({ horse }: { horse: Horse }) {
   const router = useRouter();

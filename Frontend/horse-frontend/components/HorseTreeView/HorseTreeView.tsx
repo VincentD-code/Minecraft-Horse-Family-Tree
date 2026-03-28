@@ -13,7 +13,7 @@ import {
 } from "@xyflow/react";
 import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { getCookie, setCookie } from "cookies-next";import { getBaseLayout, getSortLayout } from "@/lib/layout";
+import { getCookie, setCookie } from "cookies-next";import { getBaseLayout, getSortLayout } from "@/utils/layout";
 import "@xyflow/react/dist/style.css";
 import CustomHorseNode, { HorseNode } from "../HorseNode/HorseNode";
 import AddHorseButton from "../AddHorseButton/AddHorseButton";
