@@ -18,6 +18,7 @@ import "@xyflow/react/dist/style.css";
 import CustomHorseNode, { HorseNode } from "../HorseNode/HorseNode";
 import AddHorseButton from "../AddHorseButton/AddHorseButton";
 import * as styles from "./HorseTreeView.css";
+import Button from "../Button/Button";
 
 const nodeTypes = { horseNode: CustomHorseNode };
 type ViewMode = 'base' | 'speed' | 'jump' | 'health';
@@ -103,7 +104,7 @@ return (
         </button>
       </div>
 
-      <AddHorseButton />
+      <Button onClick={()=>{router.push(`/horses/create`)}} text="Add Horse" />
       
       <ReactFlow
         nodes={nodes}
