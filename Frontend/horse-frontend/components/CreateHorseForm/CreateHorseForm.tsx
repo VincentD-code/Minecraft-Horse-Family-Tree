@@ -1,7 +1,7 @@
 "use client";
 import createHorseAction from "@/actions/createHorseAction";
 import { Horse } from "@/types/horse";
-import { HorseStats, parseHorseStats } from "@/utils/parseHorseStats";
+import { HorseStats } from "@/utils/parseHorseStats";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Select from "react-select";
@@ -48,13 +48,13 @@ export default function CreateHorseForm({ horses }: CreateHorseFormProps) {
           <Select
             options={parentOptions}
             placeholder="Parent 1"
-            name="sireId"
+            name="parentId1"
             className={styles.field}
           />
           <Select
             options={parentOptions}
             placeholder="Parent 2"
-            name="damId"
+            name="parentId2"
             className={styles.field}
           />
           <Select

@@ -3,12 +3,13 @@ import * as styles from "./Button.css";
 interface ButtonProps {
   onClick?: () => void;
   text: string;
-  className?: string; 
+  className?: string;
+  variant?: 'default' | 'danger';
 }
 
-export default function Button({ onClick, text, className }: ButtonProps) {
+export default function Button({ onClick, text, className, variant }: ButtonProps) {
   return (
-    <button className={`${styles.Button} ${className || ""}`} onClick={onClick}>
+    <button className={`${styles.Button} ${variant === 'danger' ? styles.danger : ''} ${className || ""}`} onClick={onClick}>
       {text}
     </button>
   );

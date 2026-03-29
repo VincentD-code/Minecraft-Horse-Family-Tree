@@ -9,14 +9,12 @@ export const pageWrapper = style({
   fontFamily: "Inter, system-ui, sans-serif",
 });
 
-export const backButton = style({
-  position: "absolute",
-  top: "20px",
-  left: "20px",
+export const buttonRow = style({
+  display: "flex",
+  flexDirection: "row",
+  justifyContent: "space-between",
 })
 
-export const editButton = style({
-  position: "absolute",
-  top: "20px",
-  right: "20px",
+export const deleteButton = style({
+  marginLeft: "15px"
 })

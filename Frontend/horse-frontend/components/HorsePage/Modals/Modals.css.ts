@@ -22,15 +22,3 @@ export const modal = style({
     flexDirection: "column",
     gap: "16px",
 })
-
-export const statRow = style({
-    display: "flex",
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-between",
-})
-
-export const buttonRow = style({
-    display: "flex",
-    justifyContent: "space-between",
-})

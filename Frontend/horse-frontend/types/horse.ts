@@ -32,7 +32,7 @@ export interface createHorseRequest {
   dna: horseDna;
 }
 
-interface horseDna {
+export interface horseDna {
     [key: string]: number;
 }
 
@@ -46,6 +46,9 @@ export interface editHorseRequest {
   jump: number;
   health: number;
   variant: number;
+  hexColor: string;
+  generation: number;
+  dna: horseDna;
 }
 
 // type used in the home page nodes

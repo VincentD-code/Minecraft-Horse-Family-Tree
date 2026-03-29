@@ -66,7 +66,7 @@ export async function getHorseById(id: string): Promise<Horse | undefined> {
       jump: parseFloat(response.jumpRaw) || 0,
       health: parseFloat(response.health) || 0,
       variant: parseFloat(response.variantId) || 0,
-      generation: 0,
+      generation: parseFloat(response.generation) || 0,
       dna: response.dna || {},
       hexColor: response.hexColor || "#000000",
     };

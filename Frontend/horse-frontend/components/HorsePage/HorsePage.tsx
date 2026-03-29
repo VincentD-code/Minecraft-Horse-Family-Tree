@@ -8,8 +8,10 @@ import HorsePageHeader from "./HorsePageHeader/HorsePageHeader";
 import StatsShapeGrid from "./StatsShapeGrid/StatsShapeGrid";
 import DetailsCard from "./DetailsCard/DetailsCard";
 import { useState } from "react";
-import HorseEditModal from "./HorseEditModal/HorseEditModal";
+import HorseEditModal from "./Modals/HorseEditModal/HorseEditModal";
 import editHorseAction from "@/actions/editHorseAction";
+import HorseDeleteModal from "./Modals/HorseDeleteModal/HorseDeleteModal";
+import deleteHorseAction from "@/actions/deleteHorseAction";
 
 export default function HorsePage({
   horse,
@@ -20,12 +22,15 @@ export default function HorsePage({
 }) {
   const router = useRouter();
   const [editMode, setEditMode] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
 
-  const [formData, setFormData] = useState<Horse>(horse);
   const onEditClick = () => {
     setEditMode(!editMode);
   };
-  const onSubmitChange = () => {};
+
+  const onDeleteClick = () => {
+    setDeleteMode(true);
+  }
 
   const onBackClick = () => {
     router.back();
@@ -44,15 +49,27 @@ export default function HorsePage({
     setEditMode(false);
   }
 
+  const onDeleteConfirm = () => {
+    deleteHorseAction(horse.id);
+    router.push("/horses");
+  }
+
+  const parent1Name = horse.parentId1 ? horses.find(h => h.id === horse.parentId1)?.name || "Unknown" : "None";
+  const parent2Name = horse.parentId2 ? horses.find(h => h.id === horse.parentId2)?.name || "Unknown" : "None";
+
   return (
     <main className={styles.pageWrapper}>
+      <div className={styles.buttonRow}>
       <Button
         onClick={onBackClick}
         text="⬅ Back"
-        className={styles.backButton}
       />
 
-      <Button onClick={onEditClick} text="Edit" className={styles.editButton} />
+      <div className={styles.buttonRow}>
+      <Button onClick={onEditClick} text="Edit" />
+      <Button onClick={onDeleteClick} text="Delete" className={styles.deleteButton} />
+      </div>
+      </div>
 
       <HorseEditModal
         horse={horse}
@@ -63,6 +80,8 @@ export default function HorsePage({
         processedStats={processedStats}
       />
 
+      <HorseDeleteModal isOpen={deleteMode} onClose={() => setDeleteMode(false)} onConfirm={onDeleteConfirm} />
+
       <HorsePageHeader horse={horse} horseColor={horseColor} />
 
       <StatsShapeGrid
@@ -71,7 +90,7 @@ export default function HorsePage({
         horseColor={horseColor}
       />
 
-      <DetailsCard horse={horse} processedStats={processedStats} />
+      <DetailsCard horse={horse} processedStats={processedStats} parent1Name={parent1Name} parent2Name={parent2Name} />
     </main>
   );
 }

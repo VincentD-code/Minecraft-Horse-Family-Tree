@@ -1,6 +1,7 @@
 import { Horse } from "@/types/horse";
 import { useState } from "react";
 import Select from "react-select";
+import * as modalStyles from "../Modals.css";
 import * as styles from "./HorseEditModal.css";
 import Button from "@/components/Button/Button";
 import Switch from "@mui/material/Switch";
@@ -67,27 +68,31 @@ export default function HorseEditModal({
   };
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
+    <div className={modalStyles.overlay}>
+      <div className={modalStyles.modal}>
         <h2>Edit {horse.name}</h2>
         <label>Parent 1</label>
         <Select
           options={parentOptions}
           isClearable={false}
-          defaultValue={parentOptions.find((opt) => opt.value === horse.sireId)}
+          defaultValue={parentOptions.find(
+            (opt) => opt.value === horse.parentId1,
+          )}
           onChange={(selected) => {
             if (selected) {
-              handleChange("sireId", selected.value);
+              handleChange("parentId1", selected.value);
             }
           }}
         />
         <label>Parent 2</label>
         <Select
           options={parentOptions}
-          defaultValue={parentOptions.find((opt) => opt.value === horse.damId)}
+          defaultValue={parentOptions.find(
+            (opt) => opt.value === horse.parentId2,
+          )}
           onChange={(selected) => {
             if (selected) {
-              handleChange("damId", selected.value);
+              handleChange("parentId2", selected.value);
             }
           }}
         />

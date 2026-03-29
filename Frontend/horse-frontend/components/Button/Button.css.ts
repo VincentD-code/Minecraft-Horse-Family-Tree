@@ -1,4 +1,4 @@
-import { style, globalStyle } from "@vanilla-extract/css";
+import { style } from "@vanilla-extract/css";
 
 export const Button = style({
   textTransform: "uppercase",
@@ -14,6 +14,13 @@ export const Button = style({
   transition: "all 0.2s ease",
   ":hover": {
     background: "#2d4a3e",
-    color: "white"
-  }
+    color: "white",
+  },
+});
+
+export const danger = style({
+  ":hover": {
+    background: "#800505",
+    borderColor: "#800505",
+  },
 });
