@@ -12,8 +12,6 @@ export default async function getHorsePage({ params }: PageProps) {
 
   const [horse, horses] = await Promise.all([getHorseById(id), getAllHorses()]);
 
-  console.log("Horse:", horse);
-
   if (!horse || !horses) {
     notFound();
   }

@@ -39,6 +39,11 @@ function TreeContent({ initialNodes, initialEdges }: HorseTreeViewProps) {
 
   const [nodes, setNodes] = useState<HorseNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // 2. Update layout when the view state changes
   useEffect(() => {
@@ -77,7 +82,7 @@ return (
         
         <button 
           onClick={() => toggleView('base')}
-          className={view === 'base' ? styles.baseButtonActive : styles.baseButtonInactive}
+          className={isMounted && view === 'base' ? styles.baseButtonActive : styles.baseButtonInactive}
         >
           Traditional Lineage Tree
         </button>
@@ -88,7 +93,7 @@ return (
             <button
               key={stat}
               onClick={() => toggleView(stat)}
-              className={view === stat ? styles.statButtonActive : styles.statButtonInactive}
+              className={isMounted && view === stat ? styles.statButtonActive : styles.statButtonInactive}
             >
               {stat}
             </button>
