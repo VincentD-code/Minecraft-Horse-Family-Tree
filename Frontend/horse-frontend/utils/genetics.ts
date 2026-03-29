@@ -10,12 +10,8 @@ export const BLOODLINE_COLORS: Record<string, string> = {
   "Unknown": "#444444"
 };
 
-// Internal registry to mimic your Python 'data_registry'
 const geneticsCache = new Map<string, { dna: BloodlineMap, color: string }>();
 
-/**
- * Pure RGB Mixer based on your Python logic
- */
 function mixRgbColors(dna: BloodlineMap): string {
   let r = 0, g = 0, b = 0;
   const entries = Object.entries(dna);
@@ -86,3 +82,38 @@ export const calculateHorseGenetics = (
   geneticsCache.set(horse.id, result);
   return result;
 };
+
+
+const generationCache = new Map<string, number>();
+
+export function calculateGeneration(horseList: Horse[], id: string): number {
+      const horseMap = new Map(horseList.map((h) => [h.id, h]));
+      if (generationCache.has(id)) return generationCache.get(id)!;
+
+      const horse = horseMap.get(id);
+
+      if (!horse || (!horse.sireId && !horse.damId)) {
+        generationCache.set(id, 0);
+        return 0;
+      }
+
+      let sireGen = -1;
+      let damGen = -1;
+
+      if (horse.sireId && horseMap.has(horse.sireId)) {
+        sireGen = calculateGeneration(horseList, horse.sireId);
+      } else if (horse.sireId) {
+        sireGen = 0;
+      }
+
+      if (horse.damId && horseMap.has(horse.damId)) {
+        damGen = calculateGeneration(horseList, horse.damId);
+      } else if (horse.damId) {
+        damGen = 0;
+      }
+
+      const currentGen = Math.max(sireGen, damGen) + 1;
+
+      generationCache.set(id, currentGen);
+      return currentGen;
+    }

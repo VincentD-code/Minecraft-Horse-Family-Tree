@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import HorsePage from '@/components/HorsePage/HorsePage';
 import { getAllHorses, getHorseById } from '@/lib/horses'
 import { notFound } from 'next/navigation';

@@ -16,7 +16,6 @@ import { useRouter } from "next/navigation";
 import { getCookie, setCookie } from "cookies-next";import { getBaseLayout, getSortLayout } from "@/utils/layout";
 import "@xyflow/react/dist/style.css";
 import CustomHorseNode, { HorseNode } from "../HorseNode/HorseNode";
-import AddHorseButton from "../AddHorseButton/AddHorseButton";
 import * as styles from "./HorseTreeView.css";
 import Button from "../Button/Button";
 

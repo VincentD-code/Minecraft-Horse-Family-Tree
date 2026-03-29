@@ -9,6 +9,7 @@ import StatsShapeGrid from "./StatsShapeGrid/StatsShapeGrid";
 import DetailsCard from "./DetailsCard/DetailsCard";
 import { useState } from "react";
 import HorseEditModal from "./HorseEditModal/HorseEditModal";
+import editHorseAction from "@/actions/editHorseAction";
 
 export default function HorsePage({
   horse,
@@ -38,6 +39,11 @@ export default function HorsePage({
     variant,
   });
 
+  const onSaveEdits = (formData: Horse) => {
+    editHorseAction(horse, formData);
+    setEditMode(false);
+  }
+
   return (
     <main className={styles.pageWrapper}>
       <Button
@@ -53,10 +59,7 @@ export default function HorsePage({
         horses={horses}
         isOpen={editMode}
         onClose={() => setEditMode(false)}
-        onSave={(updatedHorse) => {
-          setFormData(updatedHorse);
-          setEditMode(false);
-        }}
+        onSave={onSaveEdits}
         processedStats={processedStats}
       />
 

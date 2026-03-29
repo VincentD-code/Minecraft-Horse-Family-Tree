@@ -1,7 +1,7 @@
 import { Db, InsertOneResult, ObjectId } from "mongodb";
 import clientPromise from "./mongodb";
 import { createHorseRequest, editHorseRequest, Horse } from "@/types/horse";
-import { calculateHorseGenetics } from "@/utils/genetics";
+import { calculateGeneration, calculateHorseGenetics } from "@/utils/genetics";
 
 export async function getAllHorses(): Promise<Horse[]> {
   try {
@@ -21,65 +21,19 @@ export async function getAllHorses(): Promise<Horse[]> {
     const horseList: Horse[] = data.map((row: any) => ({
       id: String(row._id).trim(),
       name: row.name || "Unknown",
-      sireId: row.parentId1 || row.sireId || null,
-      damId: row.parentId2 || row.damId || null,
-      sireName: row.parent1 || row.sireName || "Unknown",
-      damName: row.parent2 || row.damName || "Unknown",
+      parentId1: row.parentId1 || null,
+      parentId2: row.parentId2 || null,
       status: row.status === "Dead" ? 0 : 1,
       speed: parseFloat(row.speedRaw) || 0,
       jump: parseFloat(row.jumpRaw) || 0,
       health: parseFloat(row.health) || 0,
       variant: parseFloat(row.variantId) || 0,
-      generation: 0,
-      originBlood:
-        row.originBlood || row.bloodline || row.Bloodline || "Unknown",
+      generation: parseFloat(row.generation) || 0,
+      hexColor: row.hexColor || "#000000",
+      dna: row.dna || {},
     }));
 
-    const horseMap = new Map(horseList.map((h) => [h.id, h]));
-    const generationCache = new Map<string, number>();
-
-    function calculateGeneration(id: string): number {
-      if (generationCache.has(id)) return generationCache.get(id)!;
-
-      const horse = horseMap.get(id);
-
-      if (!horse || (!horse.sireId && !horse.damId)) {
-        generationCache.set(id, 0);
-        return 0;
-      }
-
-      let sireGen = -1;
-      let damGen = -1;
-
-      if (horse.sireId && horseMap.has(horse.sireId)) {
-        sireGen = calculateGeneration(horse.sireId);
-      } else if (horse.sireId) {
-        sireGen = 0;
-      }
-
-      if (horse.damId && horseMap.has(horse.damId)) {
-        damGen = calculateGeneration(horse.damId);
-      } else if (horse.damId) {
-        damGen = 0;
-      }
-
-      const currentGen = Math.max(sireGen, damGen) + 1;
-
-      generationCache.set(id, currentGen);
-      return currentGen;
-    }
-
-    return horseList.map((horse) => {
-      const gen = calculateGeneration(horse.id);
-      const genetics = calculateHorseGenetics(horse, horseList);
-
-      return {
-        ...horse,
-        generation: gen,
-        bloodlines: genetics.dna,
-        hexColor: genetics.color,
-      };
-    });
+    return horseList;
   } catch (error) {
     console.error("Database error:", error);
     return [];
@@ -87,8 +41,41 @@ export async function getAllHorses(): Promise<Horse[]> {
 }
 
 export async function getHorseById(id: string): Promise<Horse | undefined> {
-  const horses = await getAllHorses();
-  return horses.find((h) => h.id === id);
+  try {
+    const db_name = process.env.DB_NAME;
+    const collection_name = process.env.COLLECTION_NAME;
+    if (!db_name || !collection_name) return;
+
+    const client = await clientPromise;
+    const db = client.db(db_name);
+    const horses = db.collection(collection_name);
+
+    const response = await horses.findOne({ _id: new ObjectId(id) });
+    if (!response) {
+      console.error("Horse not found with ID:", id);
+      return;
+    }
+
+    const horse: Horse = {
+      id: String(response._id).trim(),
+      name: response.name || "Unknown",
+      parentId1: response.parentId1 || null,
+      parentId2: response.parentId2 || null,
+      status: response.status === "Dead" ? 0 : 1,
+      speed: parseFloat(response.speedRaw) || 0,
+      jump: parseFloat(response.jumpRaw) || 0,
+      health: parseFloat(response.health) || 0,
+      variant: parseFloat(response.variantId) || 0,
+      generation: 0,
+      dna: response.dna || {},
+      hexColor: response.hexColor || "#000000",
+    };
+
+    return horse;
+  } catch (error) {
+    console.error("Error fetching horse by ID", error);
+    return;
+  }
 }
 
 export async function createHorse(
@@ -136,5 +123,23 @@ export async function editHorse(
   } catch (error) {
     console.error("Error editing horse", error);
     return;
+  }
+}
+
+export async function deleteHorse(id: string): Promise<boolean> {
+  try {
+    const db_name = process.env.DB_NAME;
+    const collection_name = process.env.COLLECTION_NAME;
+    if (!db_name || !collection_name) return false;
+
+    const client = await clientPromise;
+    const db = client.db(db_name);
+    const horses = db.collection(collection_name);
+
+    const result = await horses.deleteOne({ _id: new ObjectId(id) });
+    return result.deletedCount > 0;
+  } catch (error) {
+    console.error("Error deleting horse", error);
+    return false;
   }
 }

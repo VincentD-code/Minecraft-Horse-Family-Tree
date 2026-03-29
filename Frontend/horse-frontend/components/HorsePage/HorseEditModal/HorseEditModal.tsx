@@ -1,14 +1,13 @@
-import { getAllHorses } from "@/lib/horses";
 import { Horse } from "@/types/horse";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Select from "react-select";
 import * as styles from "./HorseEditModal.css";
 import Button from "@/components/Button/Button";
-import {
-  ProcessedStats,
-  untranslateStat,
-  encodeVariant,
-} from "@/utils/translateRawStats";
+import Switch from "@mui/material/Switch";
+import { ProcessedStats, untranslateStat } from "@/utils/translateRawStats";
+import { FormControlLabel } from "@mui/material";
+import { HorseStats } from "@/utils/parseHorseStats";
+import StatsBox from "@/components/StatsBox/StatsBox";
 
 interface HorseEditModalProps {
   horse: Horse;
@@ -28,7 +27,7 @@ export default function HorseEditModal({
   processedStats,
 }: HorseEditModalProps) {
   const [formData, setFormData] = useState({ ...horse });
-  const [isLoading, setIsLoading] = useState(true);
+  const [rawStatsView, setRawStatsView] = useState(false);
 
   if (!isOpen) return null;
 
@@ -38,11 +37,21 @@ export default function HorseEditModal({
   }));
 
   const statusOptions = [
-    { value: "Alive", label: "Alive" },
-    { value: "Dead", label: "Dead" },
+    { value: 1, label: "Alive" },
+    { value: 0, label: "Dead" },
   ];
 
-  const handleChange = (field: string, value: string | undefined) => {
+  const handleImportedStats = (newStats: HorseStats) => {
+    setFormData((prev) => ({
+      ...prev,
+      speed: newStats.speed,
+      health: newStats.health,
+      jump: newStats.jump,
+      variant: newStats.variant,
+    }));
+  };
+
+  const handleChange = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -53,8 +62,8 @@ export default function HorseEditModal({
     }));
   };
 
-  const handleVariantChnage = (value: string) => {
-    setFormData((prev) => ({ ...prev, variant: encodeVariant(value) }));
+  const handleViewChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRawStatsView(!event.target.checked);
   };
 
   return (
@@ -64,57 +73,81 @@ export default function HorseEditModal({
         <label>Parent 1</label>
         <Select
           options={parentOptions}
-          defaultValue={parentOptions.filter((opt) =>
-            horse.sireId?.includes(opt.value),
-          )}
-          onChange={(selected) => handleChange("sireId", selected?.value)}
+          isClearable={false}
+          defaultValue={parentOptions.find((opt) => opt.value === horse.sireId)}
+          onChange={(selected) => {
+            if (selected) {
+              handleChange("sireId", selected.value);
+            }
+          }}
         />
         <label>Parent 2</label>
         <Select
           options={parentOptions}
-          defaultValue={parentOptions.filter((opt) =>
-            horse.damId?.includes(opt.value),
-          )}
-          onChange={(selected) => handleChange("damId", selected?.value)}
+          defaultValue={parentOptions.find((opt) => opt.value === horse.damId)}
+          onChange={(selected) => {
+            if (selected) {
+              handleChange("damId", selected.value);
+            }
+          }}
         />
 
         <label>Status</label>
         <Select
           options={statusOptions}
-          defaultValue={statusOptions.find((opt) =>
-            opt.label === (horse.status === 0 ? "Dead" : "Alive"),
+          defaultValue={statusOptions.find(
+            (opt) => opt.label === (horse.status === 0 ? "Dead" : "Alive"),
           )}
+          onChange={(selected) => {
+            if (selected) {
+              handleChange("status", selected.value);
+            }
+          }}
         />
 
-        <div>
-          <div className={styles.statRow}>
-            <label>speed</label>
-            <input
-              value={processedStats.speed.toFixed(2)}
-              onChange={(e) =>
-                handleStatChange("speed", parseFloat(e.target.value))
-              }
+        <FormControlLabel
+          control={
+            <Switch
+              checked={!rawStatsView}
+              onChange={handleViewChange}
+              size="small"
             />
+          }
+          label={rawStatsView ? "Raw Stats" : "Processed Stats"}
+        />
+        {rawStatsView ? (
+          <StatsBox onStatsParsed={handleImportedStats} />
+        ) : (
+          <div>
+            <div className={styles.statRow}>
+              <label>speed</label>
+              <input
+                value={processedStats.speed.toFixed(2)}
+                onChange={(e) =>
+                  handleStatChange("speed", parseFloat(e.target.value))
+                }
+              />
+            </div>
+            <div className={styles.statRow}>
+              <label>health</label>
+              <input
+                value={processedStats.health.toFixed(2)}
+                onChange={(e) =>
+                  handleStatChange("health", parseFloat(e.target.value))
+                }
+              />
+            </div>
+            <div className={styles.statRow}>
+              <label>jump</label>
+              <input
+                value={processedStats.jump.toFixed(2)}
+                onChange={(e) =>
+                  handleStatChange("jump", parseFloat(e.target.value))
+                }
+              />
+            </div>
           </div>
-          <div className={styles.statRow}>
-            <label>health</label>
-            <input
-              value={processedStats.health.toFixed(2)}
-              onChange={(e) =>
-                handleStatChange("health", parseFloat(e.target.value))
-              }
-            />
-          </div>
-          <div className={styles.statRow}>
-            <label>jump</label>
-            <input
-              value={processedStats.jump.toFixed(2)}
-              onChange={(e) =>
-                handleStatChange("jump", parseFloat(e.target.value))
-              }
-            />
-          </div>
-        </div>
+        )}
 
         <div className={styles.buttonRow}>
           <Button onClick={onClose} text="Cancel" />

@@ -5,11 +5,12 @@ import { getBaseLayout } from "@/utils/layout";
 import { Horse } from '@/types/horse';
 import { HorseNode } from '@/components/HorseNode/HorseNode';
 import { Edge } from '@xyflow/react';
+import { runMigration } from '@/utils/tmp_migration';
 
 export default async function HomePage() {
   const horses: Horse[] = await getAllHorses();
 
-  // console.log(horses)
+  // runMigration();
   
   const initialNodes: HorseNode[] = horses.map((h) => ({
   id: h.id.toString(),
@@ -24,19 +25,19 @@ export default async function HomePage() {
   const initialEdges: Edge[] = horses.flatMap((h) => {
   const connections: Edge[] = [];
   
-  if (h.sireId) {
+  if (h.parentId1) {
     connections.push({
-      id: `e-${h.sireId}-${h.id}`,
-      source: h.sireId,
+      id: `e-${h.parentId1}-${h.id}`,
+      source: h.parentId1,
       target: h.id?.toString(),
       animated: true,
     });
   }
   
-  if (h.damId) {
+  if (h.parentId2) {
     connections.push({
-      id: `e-${h.damId}-${h.id}`,
-      source: h.damId,
+      id: `e-${h.parentId2}-${h.id}`,
+      source: h.parentId2,
       target: h.id?.toString(),
     });
   }

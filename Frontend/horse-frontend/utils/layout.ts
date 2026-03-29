@@ -18,21 +18,28 @@ export const getBaseLayout = (nodes: HorseNode[], edges: Edge[]) => {
   
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
+  const NODE_WIDTH = 200; 
+  const NODE_HEIGHT = 70;
+
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+  });
+
   // Create a quick lookup map for generations
   const genMap = new Map(nodes.map(n => [n.id, n.data.horse.generation || 0]));
 
-  nodes.forEach((node) => dagreGraph.setNode(node.id, { width: 200, height: 70 }));
+  // nodes.forEach((node) => dagreGraph.setNode(node.id, { width: 200, height: 70 }));
 
   // Apply the minlen magic to the edges
   edges.forEach((edge) => {
-    const sourceGen = genMap.get(edge.source) || 0;
-    const targetGen = genMap.get(edge.target) || 0;
-
-    // Calculate how many generations this edge skips
-    // Math.max(1, ...) ensures we never pass 0 or a negative number, which would crash dagre
-    const generationDiff = Math.max(1, targetGen - sourceGen);
-
-    dagreGraph.setEdge(edge.source, edge.target, { minlen: generationDiff });
+    if (dagreGraph.hasNode(edge.source) && dagreGraph.hasNode(edge.target)) {
+      const sourceGen = genMap.get(edge.source) || 0;
+      const targetGen = genMap.get(edge.target) || 0;
+      
+      // Force Dagre to respect the generation gap vertically
+      const generationDiff = Math.max(1, targetGen - sourceGen);
+      dagreGraph.setEdge(edge.source, edge.target, { minlen: generationDiff });
+    }
   });
 
   dagre.layout(dagreGraph);
@@ -45,7 +52,7 @@ export const getBaseLayout = (nodes: HorseNode[], edges: Edge[]) => {
       ...node,
       data: { ...node.data, activeView: 'base' as const },
       position: {
-        x: dagreNode.x - (VISUAL_WIDTH / 2),
+        x: dagreNode.x - (NODE_WIDTH / 2),
         // Because X is now perfectly optimized for the generation gaps, 
         // we can safely snap Y to your strict grid without tangling the lines!
         y: gen * VERTICAL_SPACING, 

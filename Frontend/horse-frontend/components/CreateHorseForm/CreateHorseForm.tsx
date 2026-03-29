@@ -1,11 +1,12 @@
 "use client";
-import { createHorseAction } from "@/actions/createHorseAction";
+import createHorseAction from "@/actions/createHorseAction";
 import { Horse } from "@/types/horse";
 import { HorseStats, parseHorseStats } from "@/utils/parseHorseStats";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Select from "react-select";
 import * as styles from "./CreateHorseForm.css";
+import StatsBox from "../StatsBox/StatsBox";
 export interface CreateHorseFormProps {
   horses: Horse[];
 }
@@ -18,11 +19,17 @@ export default function CreateHorseForm({ horses }: CreateHorseFormProps) {
   const onBack = () => {
     router.back();
   };
-  const handleStatsPaste = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const parsed = parseHorseStats(e.target.value);
-    setStats(parsed);
-    setError(!parsed && e.target.value.length > 0);
+
+  const handleImportedStats = (newStats: HorseStats) => {
+    setStats((prev) => ({
+      ...prev,
+      speed: newStats.speed,
+      health: newStats.health,
+      jump: newStats.jump,
+      variant: newStats.variant,
+    }));
   };
+  
   const parentOptions = horses.map((horse) => ({
     value: horse.id.toString(),
     label: horse.name,
@@ -58,29 +65,13 @@ export default function CreateHorseForm({ horses }: CreateHorseFormProps) {
           />
         </div>
 
-        <textarea
-          placeholder="Paste /summon stats here..."
-          onChange={handleStatsPaste}
-          rows={4}
-        />
-        {error && (
-          <p>Could not parse stats — is this a valid /summon command?</p>
-        )}
+        <StatsBox onStatsParsed={handleImportedStats} />
 
         {/* Hidden fields populated from parsed stats */}
         <input type="hidden" name="speed" value={stats?.speed ?? ""} />
         <input type="hidden" name="health" value={stats?.health ?? ""} />
         <input type="hidden" name="jump" value={stats?.jump ?? ""} />
         <input type="hidden" name="variant" value={stats?.variant ?? ""} />
-
-        {stats && (
-          <ul>
-            <li>Speed: {stats.speed}</li>
-            <li>Health: {stats.health}</li>
-            <li>Jump: {stats.jump}</li>
-            <li>Variant: {stats.variant}</li>
-          </ul>
-        )}
 
         <button type="submit" disabled={!stats}>
           Create
