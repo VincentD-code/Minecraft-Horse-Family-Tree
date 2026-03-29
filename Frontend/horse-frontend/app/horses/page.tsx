@@ -5,12 +5,9 @@ import { getBaseLayout } from "@/utils/layout";
 import { Horse } from '@/types/horse';
 import { HorseNode } from '@/components/HorseNode/HorseNode';
 import { Edge } from '@xyflow/react';
-import { runMigration } from '@/utils/tmp_migration';
 
 export default async function HomePage() {
   const horses: Horse[] = await getAllHorses();
-
-  // runMigration();
   
   const initialNodes: HorseNode[] = horses.map((h) => ({
   id: h.id.toString(),

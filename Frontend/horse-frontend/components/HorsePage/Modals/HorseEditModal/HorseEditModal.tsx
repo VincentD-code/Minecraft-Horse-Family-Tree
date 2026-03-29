@@ -1,11 +1,15 @@
 import { Horse } from "@/types/horse";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Select from "react-select";
 import * as modalStyles from "../Modals.css";
 import * as styles from "./HorseEditModal.css";
 import Button from "@/components/Button/Button";
 import Switch from "@mui/material/Switch";
-import { ProcessedStats, untranslateStat } from "@/utils/translateRawStats";
+import {
+  ProcessedStats,
+  translateStat,
+  untranslateStat,
+} from "@/utils/translateRawStats";
 import { FormControlLabel } from "@mui/material";
 import { HorseStats } from "@/utils/parseHorseStats";
 import StatsBox from "@/components/StatsBox/StatsBox";
@@ -29,6 +33,31 @@ export default function HorseEditModal({
 }: HorseEditModalProps) {
   const [formData, setFormData] = useState({ ...horse });
   const [rawStatsView, setRawStatsView] = useState(false);
+  const [displayStats, setDisplayStats] = useState({
+    speed: translateStat("speed", horse.speed).toString(),
+    health: translateStat("health", horse.health).toString(),
+    jump: translateStat("jump", horse.jump).toString(),
+  });
+
+  useEffect(() => {
+    setDisplayStats({
+      speed: translateStat("speed", formData.speed).toString(),
+      health: translateStat("health", formData.health).toString(),
+      jump: translateStat("jump", formData.jump).toString(),
+    });
+  }, [formData.speed, formData.health, formData.jump]);
+
+  const handleTextChange = (field: string, textValue: string) => {
+    setDisplayStats((prev) => ({ ...prev, [field]: textValue }));
+
+    const numericValue = parseFloat(textValue);
+    if (!isNaN(numericValue)) {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: untranslateStat(field, numericValue),
+      }));
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -36,6 +65,11 @@ export default function HorseEditModal({
     value: horse.id.toString(),
     label: horse.name,
   }));
+
+  const onCancel = () => {
+    setFormData({ ...horse });
+    onClose();
+  };
 
   const statusOptions = [
     { value: 1, label: "Alive" },
@@ -125,37 +159,34 @@ export default function HorseEditModal({
         ) : (
           <div>
             <div className={styles.statRow}>
-              <label>speed</label>
+              <label>Speed</label>
               <input
-                value={processedStats.speed.toFixed(2)}
-                onChange={(e) =>
-                  handleStatChange("speed", parseFloat(e.target.value))
-                }
+                type="text"
+                value={displayStats.speed}
+                onChange={(e) => handleTextChange("speed", e.target.value)}
               />
             </div>
             <div className={styles.statRow}>
-              <label>health</label>
+              <label>Health</label>
               <input
-                value={processedStats.health.toFixed(2)}
-                onChange={(e) =>
-                  handleStatChange("health", parseFloat(e.target.value))
-                }
+                type="text"
+                value={displayStats.health}
+                onChange={(e) => handleTextChange("health", e.target.value)}
               />
             </div>
             <div className={styles.statRow}>
-              <label>jump</label>
+              <label>Jump</label>
               <input
-                value={processedStats.jump.toFixed(2)}
-                onChange={(e) =>
-                  handleStatChange("jump", parseFloat(e.target.value))
-                }
+                type="text"
+                value={displayStats.jump}
+                onChange={(e) => handleTextChange("jump", e.target.value)}
               />
             </div>
           </div>
         )}
 
         <div className={styles.buttonRow}>
-          <Button onClick={onClose} text="Cancel" />
+          <Button onClick={onCancel} text="Cancel" />
           <Button onClick={() => onSave(formData)} text="Save Changes" />
         </div>
       </div>

@@ -2,6 +2,7 @@
 import { createHorse, getHorseById } from "@/lib/horses";
 import { createHorseRequest } from "@/types/horse";
 import { processNewHorseGenetics } from "@/utils/genetics/service";
+import { revalidatePath } from 'next/cache';
 
 export default async function createHorseAction(formData: FormData) {
   const parentId1 = formData.get("parentId1") as string;
@@ -31,4 +32,6 @@ export default async function createHorseAction(formData: FormData) {
     generation: generation,
   };
   await createHorse(data);
+
+  revalidatePath("/horses");
 }

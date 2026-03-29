@@ -3,6 +3,7 @@
 import { editHorse, getHorseById } from "@/lib/horses";
 import { Horse, editHorseRequest } from "@/types/horse";
 import { processNewHorseGenetics } from "@/utils/genetics/service";
+import { revalidatePath } from 'next/cache';
 
 export default async function editHorseAction(horse: Horse, formData: Horse) {
   const parentId1 = formData.parentId1;
@@ -36,4 +37,6 @@ export default async function editHorseAction(horse: Horse, formData: Horse) {
     generation: generation,
   };
   await editHorse(horse.id, data);
+
+  revalidatePath(`/horses/${horse.id}`);
 }

@@ -37,12 +37,14 @@ export default function HorsePage({
   };
   const horseColor = horse.hexColor || "#1e293b";
   const { jump, health, speed, variant } = horse;
+  console.log("Raw Stats:", { jump, health, speed, variant });
   const processedStats = translateStatsForDisplay({
     jump,
     health,
     speed,
     variant,
   });
+  console.log("Processed Stats:", processedStats);
 
   const onSaveEdits = (formData: Horse) => {
     editHorseAction(horse, formData);

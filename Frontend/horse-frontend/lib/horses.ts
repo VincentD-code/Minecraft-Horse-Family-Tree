@@ -1,9 +1,10 @@
-import { Db, InsertOneResult, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import clientPromise from "./mongodb";
 import { createHorseRequest, editHorseRequest, Horse } from "@/types/horse";
-import { calculateGeneration, calculateHorseGenetics } from "@/utils/genetics";
+import { unstable_noStore as noStore } from 'next/cache';
 
 export async function getAllHorses(): Promise<Horse[]> {
+  noStore();
   try {
     const db_name = process.env.DB_NAME;
     const collection_name = process.env.COLLECTION_NAME;
@@ -23,9 +24,9 @@ export async function getAllHorses(): Promise<Horse[]> {
       name: row.name || "Unknown",
       parentId1: row.parentId1 || null,
       parentId2: row.parentId2 || null,
-      status: row.status === "Dead" ? 0 : 1,
-      speed: parseFloat(row.speedRaw) || 0,
-      jump: parseFloat(row.jumpRaw) || 0,
+      status: row.status,
+      speed: parseFloat(row.speed) || 0,
+      jump: parseFloat(row.jump) || 0,
       health: parseFloat(row.health) || 0,
       variant: parseFloat(row.variantId) || 0,
       generation: parseFloat(row.generation) || 0,
@@ -41,6 +42,7 @@ export async function getAllHorses(): Promise<Horse[]> {
 }
 
 export async function getHorseById(id: string): Promise<Horse | undefined> {
+  noStore();
   try {
     const db_name = process.env.DB_NAME;
     const collection_name = process.env.COLLECTION_NAME;
@@ -61,9 +63,9 @@ export async function getHorseById(id: string): Promise<Horse | undefined> {
       name: response.name || "Unknown",
       parentId1: response.parentId1 || null,
       parentId2: response.parentId2 || null,
-      status: response.status === "Dead" ? 0 : 1,
-      speed: parseFloat(response.speedRaw) || 0,
-      jump: parseFloat(response.jumpRaw) || 0,
+      status: response.status,
+      speed: parseFloat(response.speed) || 0,
+      jump: parseFloat(response.jump) || 0,
       health: parseFloat(response.health) || 0,
       variant: parseFloat(response.variantId) || 0,
       generation: parseFloat(response.generation) || 0,
@@ -81,6 +83,7 @@ export async function getHorseById(id: string): Promise<Horse | undefined> {
 export async function createHorse(
   request: createHorseRequest,
 ): Promise<string | undefined> {
+  noStore();
   try {
     const db_name = process.env.DB_NAME;
     const collection_name = process.env.COLLECTION_NAME;
@@ -106,6 +109,7 @@ export async function editHorse(
   id: string,
   request: editHorseRequest,
 ): Promise<string | undefined> {
+  noStore();
   try {
     const db_name = process.env.DB_NAME;
     const collection_name = process.env.COLLECTION_NAME;
@@ -127,6 +131,7 @@ export async function editHorse(
 }
 
 export async function deleteHorse(id: string): Promise<boolean> {
+  noStore();
   try {
     const db_name = process.env.DB_NAME;
     const collection_name = process.env.COLLECTION_NAME;

@@ -39,10 +39,15 @@ export default function CreateHorseForm({ horses }: CreateHorseFormProps) {
     { value: "Dead", label: "Dead" },
   ];
 
+  const handleSubmit = async (formData: FormData) => {
+    createHorseAction(formData);
+    router.push("/horses");
+  }
+
   return (
     <>
     <button onClick={onBack}>Back</button>
-      <form action={createHorseAction} className={styles.container}>
+      <form action={handleSubmit} className={styles.container}>
         <div className={styles.row}>
           <input name="name" placeholder="Name" className={styles.field} />
           <Select
