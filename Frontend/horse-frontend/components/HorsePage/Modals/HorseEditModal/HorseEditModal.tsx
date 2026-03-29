@@ -13,6 +13,7 @@ import {
 import { FormControlLabel } from "@mui/material";
 import { HorseStats } from "@/utils/parseHorseStats";
 import StatsBox from "@/components/StatsBox/StatsBox";
+import StatRow from "./StatRow/StatRow";
 
 interface HorseEditModalProps {
   horse: Horse;
@@ -157,32 +158,26 @@ export default function HorseEditModal({
         {rawStatsView ? (
           <StatsBox onStatsParsed={handleImportedStats} />
         ) : (
-          <div>
-            <div className={styles.statRow}>
-              <label>Speed</label>
-              <input
-                type="text"
-                value={displayStats.speed}
-                onChange={(e) => handleTextChange("speed", e.target.value)}
-              />
-            </div>
-            <div className={styles.statRow}>
-              <label>Health</label>
-              <input
-                type="text"
-                value={displayStats.health}
-                onChange={(e) => handleTextChange("health", e.target.value)}
-              />
-            </div>
-            <div className={styles.statRow}>
-              <label>Jump</label>
-              <input
-                type="text"
-                value={displayStats.jump}
-                onChange={(e) => handleTextChange("jump", e.target.value)}
-              />
-            </div>
-          </div>
+          <>
+            <StatRow
+              text="Speed"
+              fieldName="speed"
+              displayStats={displayStats}
+              handleTextChange={handleTextChange}
+            />
+            <StatRow
+              text="Health"
+              fieldName="health"
+              displayStats={displayStats}
+              handleTextChange={handleTextChange}
+            />
+            <StatRow
+              text="Jump"
+              fieldName="jump"
+              displayStats={displayStats}
+              handleTextChange={handleTextChange}
+            />
+          </>
         )}
 
         <div className={styles.buttonRow}>
