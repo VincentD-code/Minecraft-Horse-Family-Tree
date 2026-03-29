@@ -9,6 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.9",
     "@types/dagre": "^0.7.54",
     "@vanilla-extract/css": "^1.19.0",
     "@xyflow/react": "^12.10.1",

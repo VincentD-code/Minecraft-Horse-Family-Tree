@@ -1,39 +1,58 @@
 // main type representing a horse
-export interface Horse{
-    id: string;
-    name: string;
-    sireId?: string,
-    damId?: string,
-    sireName?: string; 
-    damName?: string;
-    status: number;
-    speed: number;
-    jump: number;
-    health: number;
-    variant: number;
-    generation: number;
-    originBlood?: string; 
-    hexColor?: string;
-    bloodlines?: BloodlineMap;
+export interface Horse {
+  id: string;
+  name: string;
+  parentId1?: string;
+  parentId2?: string;
+  dna: BloodlineMap;
+  status: number;
+  speed: number;
+  jump: number;
+  health: number;
+  variant: number;
+  generation: number;
+  hexColor?: string;
 }
 
 export type BloodlineMap = {
   [key: string]: number;
 };
 
-export interface createHorseRequest{
-    name: string;
-    sireId?: string;
-    damId?: string;
-    status: number;
-    speed: number;
-    jump: number;
-    health: number;
-    variant: number;
+export interface createHorseRequest {
+  name: string;
+  parentId1?: string;
+  parentId2?: string;
+  status: number;
+  speed: number;
+  jump: number;
+  health: number;
+  variant: number;
+  hexColor: string;
+  generation: number;
+  dna: horseDna;
+}
+
+export interface horseDna {
+    [key: string]: number;
+}
+
+export interface editHorseRequest {
+  id: string;
+  name?: string;
+  parentId1?: string;
+  parentId2?: string;
+  status: number;
+  speed: number;
+  jump: number;
+  health: number;
+  variant: number;
+  hexColor: string;
+  generation: number;
+  dna: horseDna;
 }
 
 // type used in the home page nodes
 export interface HorseNodeData {
-    labels: string;
-    horse: Horse;
+  labels: string;
+  horse: Horse;
 }

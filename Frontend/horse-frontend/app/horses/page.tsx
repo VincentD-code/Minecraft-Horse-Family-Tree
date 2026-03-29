@@ -8,8 +8,6 @@ import { Edge } from '@xyflow/react';
 
 export default async function HomePage() {
   const horses: Horse[] = await getAllHorses();
-
-  // console.log(horses)
   
   const initialNodes: HorseNode[] = horses.map((h) => ({
   id: h.id.toString(),
@@ -24,19 +22,19 @@ export default async function HomePage() {
   const initialEdges: Edge[] = horses.flatMap((h) => {
   const connections: Edge[] = [];
   
-  if (h.sireId) {
+  if (h.parentId1) {
     connections.push({
-      id: `e-${h.sireId}-${h.id}`,
-      source: h.sireId,
+      id: `e-${h.parentId1}-${h.id}`,
+      source: h.parentId1,
       target: h.id?.toString(),
       animated: true,
     });
   }
   
-  if (h.damId) {
+  if (h.parentId2) {
     connections.push({
-      id: `e-${h.damId}-${h.id}`,
-      source: h.damId,
+      id: `e-${h.parentId2}-${h.id}`,
+      source: h.parentId2,
       target: h.id?.toString(),
     });
   }
@@ -50,7 +48,7 @@ export default async function HomePage() {
   const dataKey = `tree-${horses.length}`;
 
   return (
-    <main className="h-screen w-full">
+    <main className="h-screen w-full" suppressHydrationWarning>
       <HorseTreeView initialNodes={nodes} initialEdges={edges} key={dataKey}/>
     </main>
   );

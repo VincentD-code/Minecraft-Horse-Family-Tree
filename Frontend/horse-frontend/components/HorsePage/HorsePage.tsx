@@ -3,110 +3,94 @@ import { Horse } from "@/types/horse";
 import { useRouter } from "next/navigation";
 import * as styles from "./HorsePage.css";
 import { translateStatsForDisplay } from "@/utils/translateRawStats";
-import { BloodlineDisplay } from "../BloodlineDisplay/BloodlineDisplay";
+import Button from "../Button/Button";
+import HorsePageHeader from "./HorsePageHeader/HorsePageHeader";
+import StatsShapeGrid from "./StatsShapeGrid/StatsShapeGrid";
+import DetailsCard from "./DetailsCard/DetailsCard";
+import { useState } from "react";
+import HorseEditModal from "./Modals/HorseEditModal/HorseEditModal";
+import editHorseAction from "@/actions/editHorseAction";
+import HorseDeleteModal from "./Modals/HorseDeleteModal/HorseDeleteModal";
+import deleteHorseAction from "@/actions/deleteHorseAction";
 
-
-export default function HorsePage({ horse }: { horse: Horse }) {
+export default function HorsePage({
+  horse,
+  horses,
+}: {
+  horse: Horse;
+  horses: Horse[];
+}) {
   const router = useRouter();
-  const onBackClick = () => {router.back();};
+  const [editMode, setEditMode] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
+
+  const onEditClick = () => {
+    setEditMode(!editMode);
+  };
+
+  const onDeleteClick = () => {
+    setDeleteMode(true);
+  }
+
+  const onBackClick = () => {
+    router.back();
+  };
   const horseColor = horse.hexColor || "#1e293b";
   const { jump, health, speed, variant } = horse;
-  const processedStats = translateStatsForDisplay({ jump, health, speed, variant });
+  const processedStats = translateStatsForDisplay({
+    jump,
+    health,
+    speed,
+    variant,
+  });
+
+  const onSaveEdits = (formData: Horse) => {
+    editHorseAction(horse, formData);
+    setEditMode(false);
+  }
+
+  const onDeleteConfirm = () => {
+    deleteHorseAction(horse.id);
+    router.push("/horses");
+  }
+
+  const parent1Name = horse.parentId1 ? horses.find(h => h.id === horse.parentId1)?.name || "Unknown" : "None";
+  const parent2Name = horse.parentId2 ? horses.find(h => h.id === horse.parentId2)?.name || "Unknown" : "None";
 
   return (
     <main className={styles.pageWrapper}>
-      <button className={styles.backButton} onClick={onBackClick}>
-        ← Back
-      </button>
+      <div className={styles.buttonRow}>
+      <Button
+        onClick={onBackClick}
+        text="⬅ Back"
+      />
 
-      <header className={styles.header}>
-        <h1 
-          className={styles.heading} 
-          style={{ color: horseColor }}
-        >
-          {horse.name}
-        </h1>
-        <span className={horse.status === 0 ? styles.statusDead : styles.statusAlive}>
-          {horse.status === 0 ? "Deceased" : "Living"}
-        </span>
-      </header>
-
-      <div className={styles.statsShapeGrid}>
-        <StatShapeCard 
-          label="Speed" 
-          value={processedStats.speed?.toFixed(2)} 
-          unit="bps" 
-          shapeId="speed"
-          horseColor={horseColor}
-        />
-        <StatShapeCard 
-          label="Jump" 
-          value={processedStats.jump?.toFixed(2)} 
-          unit="blocks" 
-          shapeId="jump"
-          horseColor={horseColor}
-        />
-        <StatShapeCard 
-          label="Health" 
-          value={processedStats.health?.toFixed(2)} 
-          unit="hearts" 
-          shapeId="health"
-          horseColor={horseColor}
-        />
-        <StatShapeCard 
-          label="Generation" 
-          value={horse.generation} 
-          subtext="LINEAGE DEPTH"
-          shapeId="generation"
-          horseColor={horseColor}
-        />
+      <div className={styles.buttonRow}>
+      <Button onClick={onEditClick} text="Edit" />
+      <Button onClick={onDeleteClick} text="Delete" className={styles.deleteButton} />
+      </div>
       </div>
 
-      <section className={styles.detailsSection}>
-        <div className={styles.detailRow}>
-          <strong>Appearance Variant</strong>
-          <span>{processedStats.variant|| "Standard"}</span>
-        </div>
-        
-        <div className={styles.lineageSection}>
-          <h3 className={styles.sectionTitle}>Parentage</h3>
-          <div className={styles.parentGrid}>
-            <div className={styles.parentBox}>
-              <small className={styles.parentLabel}>Parent 1</small>
-              <p className={styles.parentName}> {horse.sireName || "Unknown"}</p>
-            </div>
-            <div className={styles.parentBox}>
-              <small className={styles.parentLabel}>Parent 2</small>
-              <p className={styles.parentName}> {horse.damName || "Unknown"}</p>
-            </div>
-          </div>
-        </div>
+      <HorseEditModal
+        horse={horse}
+        horses={horses}
+        isOpen={editMode}
+        onClose={() => setEditMode(false)}
+        onSave={onSaveEdits}
+        processedStats={processedStats}
+      />
 
-        <hr className={styles.divider} />
-        
-        <div className={styles.bloodlineWrapper}>
-          <h3 className={styles.sectionTitle}>Genetic Composition</h3>
-          <BloodlineDisplay bloodlines={horse.bloodlines} />
-        </div>
-      </section>
+      <HorseDeleteModal isOpen={deleteMode} onClose={() => setDeleteMode(false)} onConfirm={onDeleteConfirm} />
+
+      <HorsePageHeader horse={horse} horseColor={horseColor} />
+
+      <StatsShapeGrid
+        horse={horse}
+        processedStats={processedStats}
+        horseColor={horseColor}
+      />
+
+      <DetailsCard horse={horse} processedStats={processedStats} parent1Name={parent1Name} parent2Name={parent2Name} />
     </main>
-  );
-}
-
-function StatShapeCard({ label, value, unit, subtext, shapeId, horseColor }: { label: string; value: any; unit?: string; subtext?: string; shapeId: string; horseColor: string; }) {
-  return (
-    <div 
-      className={styles.shapeCard} 
-      data-shape={shapeId}
-      style={{ '--shape-color': horseColor } as React.CSSProperties} 
-    >
-      <div className={styles.shapeTextContainer}>
-        <div className={styles.shapeLabel}>{label}</div>
-        <div className={styles.shapeValue}>
-          {value ?? "N/A"}<small className={styles.shapeUnit}> {unit}</small>
-        </div>
-        {subtext && <div className={styles.shapeSubtext}>{subtext}</div>}
-      </div>
-    </div>
   );
 }
