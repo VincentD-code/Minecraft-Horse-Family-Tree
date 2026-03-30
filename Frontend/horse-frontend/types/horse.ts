@@ -37,7 +37,6 @@ export interface horseDna {
 }
 
 export interface editHorseRequest {
-  id: string;
   name?: string;
   parentId1?: string;
   parentId2?: string;

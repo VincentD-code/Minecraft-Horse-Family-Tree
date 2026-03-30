@@ -18,6 +18,8 @@ import "@xyflow/react/dist/style.css";
 import CustomHorseNode, { HorseNode } from "../HorseNode/HorseNode";
 import * as styles from "./HorseTreeView.css";
 import Button from "../Button/Button";
+import HorseCreateModal from "../Modals/HorseCreateModal/HorseCreateModal";
+import { Horse } from "@/types/horse";
 
 const nodeTypes = { horseNode: CustomHorseNode };
 type ViewMode = 'base' | 'speed' | 'jump' | 'health';
@@ -25,11 +27,13 @@ type ViewMode = 'base' | 'speed' | 'jump' | 'health';
 interface HorseTreeViewProps {
   initialNodes: HorseNode[];
   initialEdges: Edge[];
+  horses: Horse[];
 }
 
-function TreeContent({ initialNodes, initialEdges }: HorseTreeViewProps) {
+function TreeContent({ initialNodes, initialEdges, horses }: HorseTreeViewProps) {
   const router = useRouter();
   const { fitView } = useReactFlow();
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
  // 1. Initialize state from Cookie (falling back to 'base')
   const [view, setView] = useState<ViewMode>(() => {
@@ -108,7 +112,8 @@ return (
         </button>
       </div>
 
-      <Button onClick={()=>{router.push(`/horses/create`)}} text="Add Horse" />
+      <Button onClick={() => setCreateModalOpen(true)} text="Add Horse" />
+      <HorseCreateModal isOpen={createModalOpen} setIsOpen={setCreateModalOpen} horses={horses}/>
       
       <ReactFlow
         nodes={nodes}

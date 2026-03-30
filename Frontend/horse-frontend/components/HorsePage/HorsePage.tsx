@@ -8,9 +8,9 @@ import HorsePageHeader from "./HorsePageHeader/HorsePageHeader";
 import StatsShapeGrid from "./StatsShapeGrid/StatsShapeGrid";
 import DetailsCard from "./DetailsCard/DetailsCard";
 import { useState } from "react";
-import HorseEditModal from "./Modals/HorseEditModal/HorseEditModal";
+import HorseEditModal from "@/components/Modals/HorseEditModal/HorseEditModal"
 import editHorseAction from "@/actions/editHorseAction";
-import HorseDeleteModal from "./Modals/HorseDeleteModal/HorseDeleteModal";
+import HorseDeleteModal from "@/components/Modals/HorseDeleteModal/HorseDeleteModal"
 import deleteHorseAction from "@/actions/deleteHorseAction";
 
 export default function HorsePage({

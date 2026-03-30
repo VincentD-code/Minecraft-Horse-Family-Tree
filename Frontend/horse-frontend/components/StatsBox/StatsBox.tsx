@@ -1,5 +1,6 @@
 import { HorseStats, parseHorseStats } from "@/utils/parseHorseStats";
 import { useState } from "react";
+import * as styles from "./StatsBox.css"
 
 interface StatsBoxProps {
     onStatsParsed: (stats: HorseStats) => void;
@@ -26,6 +27,7 @@ export default function StatsBox({ onStatsParsed }: StatsBoxProps){
               placeholder="Paste /summon stats here..."
               onChange={handleStatsPaste}
               rows={4}
+              className={styles.textArea}
             />
             {error && (
               <p>Could not parse stats — is this a valid /summon command?</p>

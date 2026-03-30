@@ -44,7 +44,10 @@ export default function HorseEditModal({
     setDisplayStats({
       speed: translateStat("speed", formData.speed).toString(),
       health: translateStat("health", formData.health).toString(),
-      jump: translateStat("jump", formData.jump).toString(),
+      jump:
+        translateStat("jump", formData.jump) < 0
+          ? "0"
+          : translateStat("jump", formData.jump).toString(),
     });
   }, [formData.speed, formData.health, formData.jump]);
 
@@ -91,13 +94,6 @@ export default function HorseEditModal({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleStatChange = (field: string, value: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: untranslateStat(field, value),
-    }));
-  };
-
   const handleViewChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRawStatsView(!event.target.checked);
   };
@@ -106,31 +102,36 @@ export default function HorseEditModal({
     <div className={modalStyles.overlay}>
       <div className={modalStyles.modal}>
         <h2>Edit {horse.name}</h2>
-        <label>Parent 1</label>
-        <Select
-          options={parentOptions}
-          isClearable={false}
-          defaultValue={parentOptions.find(
-            (opt) => opt.value === horse.parentId1,
-          )}
-          onChange={(selected) => {
-            if (selected) {
-              handleChange("parentId1", selected.value);
-            }
-          }}
-        />
-        <label>Parent 2</label>
-        <Select
-          options={parentOptions}
-          defaultValue={parentOptions.find(
-            (opt) => opt.value === horse.parentId2,
-          )}
-          onChange={(selected) => {
-            if (selected) {
-              handleChange("parentId2", selected.value);
-            }
-          }}
-        />
+
+        {parentOptions.keys.length > 1 && (
+          <>
+            <label>Parent 1</label>
+            <Select
+              options={parentOptions}
+              isClearable={false}
+              defaultValue={parentOptions.find(
+                (opt) => opt.value === horse.parentId1,
+              )}
+              onChange={(selected) => {
+                if (selected) {
+                  handleChange("parentId1", selected.value);
+                }
+              }}
+            />
+            <label>Parent 2</label>
+            <Select
+              options={parentOptions}
+              defaultValue={parentOptions.find(
+                (opt) => opt.value === horse.parentId2,
+              )}
+              onChange={(selected) => {
+                if (selected) {
+                  handleChange("parentId2", selected.value);
+                }
+              }}
+            />
+          </>
+        )}
 
         <label>Status</label>
         <Select

@@ -1,12 +1,13 @@
 "use server";
+import { createHorseData } from "@/components/Modals/HorseCreateModal/HorseCreateModal";
 import { createHorse, getHorseById } from "@/lib/horses";
 import { createHorseRequest } from "@/types/horse";
 import { processNewHorseGenetics } from "@/utils/genetics/service";
 import { revalidatePath } from 'next/cache';
 
-export default async function createHorseAction(formData: FormData) {
-  const parentId1 = formData.get("parentId1") as string;
-  const parentId2 = formData.get("parentId2") as string;
+export default async function createHorseAction(formData: createHorseData) {
+  const parentId1 = formData.parentId1;
+  const parentId2 = formData.parentId2;
 
   const [parent1, parent2] = await Promise.all([
     getHorseById(parentId1),
@@ -19,14 +20,14 @@ export default async function createHorseAction(formData: FormData) {
   );
 
   const data: createHorseRequest = {
-    name: formData.get("name") as string,
-    parentId1: formData.get("parentId1") as string,
-    parentId2: formData.get("parentId2") as string,
-    status: formData.get("status") === "Alive" ? 1 : 0,
-    speed: parseFloat(formData.get("speed") as string),
-    health: parseFloat(formData.get("health") as string),
-    jump: parseFloat(formData.get("jump") as string),
-    variant: parseFloat(formData.get("variant") as string),
+    name: formData.name as string,
+    parentId1: formData.parentId1 as string,
+    parentId2: formData.parentId2 as string,
+    status: formData.status,
+    speed: formData.speed,
+    health: formData.health,
+    jump: formData.jump,
+    variant: formData.variant,
     dna: dna,
     hexColor: hexColor,
     generation: generation,
