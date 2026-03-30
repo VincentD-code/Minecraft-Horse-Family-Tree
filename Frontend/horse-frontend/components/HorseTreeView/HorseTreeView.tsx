@@ -13,16 +13,18 @@ import {
 } from "@xyflow/react";
 import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { getCookie, setCookie } from "cookies-next";import { getBaseLayout, getSortLayout } from "@/utils/layout";
+import { getCookie, setCookie } from "cookies-next";
+import { getBaseLayout, getSortLayout } from "@/utils/layout";
 import "@xyflow/react/dist/style.css";
 import CustomHorseNode, { HorseNode } from "../HorseNode/HorseNode";
 import * as styles from "./HorseTreeView.css";
 import Button from "../Button/Button";
 import HorseCreateModal from "../Modals/HorseCreateModal/HorseCreateModal";
 import { Horse } from "@/types/horse";
+import ViewMenu from "./ViewMenu/ViewMenu";
 
 const nodeTypes = { horseNode: CustomHorseNode };
-type ViewMode = 'base' | 'speed' | 'jump' | 'health';
+export type ViewMode = "base" | "speed" | "jump" | "health";
 
 interface HorseTreeViewProps {
   initialNodes: HorseNode[];
@@ -30,12 +32,16 @@ interface HorseTreeViewProps {
   horses: Horse[];
 }
 
-function TreeContent({ initialNodes, initialEdges, horses }: HorseTreeViewProps) {
+function TreeContent({
+  initialNodes,
+  initialEdges,
+  horses,
+}: HorseTreeViewProps) {
   const router = useRouter();
   const { fitView } = useReactFlow();
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
- // 1. Initialize state from Cookie (falling back to 'base')
+  // 1. Initialize state from Cookie (falling back to 'base')
   const [view, setView] = useState<ViewMode>(() => {
     const savedView = getCookie("horse-tree-view") as ViewMode;
     return savedView || "base";
@@ -51,10 +57,11 @@ function TreeContent({ initialNodes, initialEdges, horses }: HorseTreeViewProps)
 
   // 2. Update layout when the view state changes
   useEffect(() => {
-    const newNodes = view === 'base' 
-      ? getBaseLayout(initialNodes, initialEdges) 
-      : getSortLayout(initialNodes, view);
-    
+    const newNodes =
+      view === "base"
+        ? getBaseLayout(initialNodes, initialEdges)
+        : getSortLayout(initialNodes, view);
+
     setNodes(newNodes);
     setEdges(initialEdges);
   }, [view, initialNodes, initialEdges]);
@@ -63,58 +70,34 @@ function TreeContent({ initialNodes, initialEdges, horses }: HorseTreeViewProps)
   const toggleView = (mode: ViewMode) => {
     setView(mode);
     setCookie("horse-tree-view", mode, { maxAge: 60 * 60 * 24 * 30 }); // Save for 30 days
-    
+
     // Smooth transition
     setTimeout(() => fitView({ duration: 800 }), 50);
   };
 
   const onNodesChange: OnNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds) as HorseNode[]),
-    []
+    (changes) =>
+      setNodes((nds) => applyNodeChanges(changes, nds) as HorseNode[]),
+    [],
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    []
+    [],
   );
 
-return (
+  return (
     <div className={styles.container}>
       {/* Floating Menu */}
-      <div className={styles.menuWrapper}>
-        <p className={styles.menuLabel}>Layout Mode</p>
-        
-        <button 
-          onClick={() => toggleView('base')}
-          className={isMounted && view === 'base' ? styles.baseButtonActive : styles.baseButtonInactive}
-        >
-          Traditional Lineage Tree
-        </button>
-
-        <p className={styles.menuLabel} style={{ marginTop: '8px' }}>Rank by Stat (Left to Right)</p>
-        <div className={styles.statGrid}>
-          {(['speed', 'jump', 'health'] as const).map((stat) => (
-            <button
-              key={stat}
-              onClick={() => toggleView(stat)}
-              className={isMounted && view === stat ? styles.statButtonActive : styles.statButtonInactive}
-            >
-              {stat}
-            </button>
-          ))}
-        </div>
-        
-        <button 
-          onClick={() => fitView({ duration: 800, padding: 0.2 })}
-          className={styles.resetButton}
-        >
-          🔍 Reset Zoom
-        </button>
-      </div>
+      <ViewMenu setView={setView} isMounted={isMounted} view={view}/>
 
       <Button onClick={() => setCreateModalOpen(true)} text="Add Horse" />
-      <HorseCreateModal isOpen={createModalOpen} setIsOpen={setCreateModalOpen} horses={horses}/>
-      
+      <HorseCreateModal
+        isOpen={createModalOpen}
+        setIsOpen={setCreateModalOpen}
+        horses={horses}
+      />
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -134,7 +117,11 @@ return (
 export default function HorseTreeView(props: HorseTreeViewProps) {
   return (
     <ReactFlowProvider>
-      <Suspense fallback={<div className={styles.loadingFallback}>Loading lineage...</div>}>
+      <Suspense
+        fallback={
+          <div className={styles.loadingFallback}>Loading lineage...</div>
+        }
+      >
         <TreeContent {...props} />
       </Suspense>
     </ReactFlowProvider>
