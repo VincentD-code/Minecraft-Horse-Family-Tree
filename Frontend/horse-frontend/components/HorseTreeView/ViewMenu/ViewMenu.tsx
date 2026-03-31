@@ -4,13 +4,21 @@ import * as styles from "./ViewMenu.css";
 import { setCookie } from "cookies-next";
 import { useReactFlow } from "@xyflow/react";
 import Button from "@/components/Button/Button";
+import StatusModeSwitch from "../StatusModeSwitch/StatusModeSwitch";
 
 interface ViewMenuProps {
   setView: Dispatch<SetStateAction<ViewMode>>;
   view: ViewMode;
+  showStatusMode: boolean;
+  setShowStatusMode: Dispatch<SetStateAction<boolean>>;
 }
 
-export default function ViewMenu({ setView, view }: ViewMenuProps) {
+export default function ViewMenu({ 
+  setView, 
+  view, 
+  showStatusMode, 
+  setShowStatusMode 
+}: ViewMenuProps) {
   const { fitView } = useReactFlow();
   const toggleView = (mode: ViewMode) => {
     setView(mode);
@@ -33,7 +41,17 @@ export default function ViewMenu({ setView, view }: ViewMenuProps) {
         text="Traditional Lineage Tree"
       />
 
-      <p className={styles.menuLabel} style={{ marginTop: "8px" }}>
+      <p className={styles.menuLabel} style={{ marginTop: "16px" }}>
+        View Options
+      </p>
+      <div style={{ padding: "0 8px" }}>
+        <StatusModeSwitch 
+          showStatusMode={showStatusMode} 
+          handleToggle={(e) => setShowStatusMode(e.target.checked)} 
+        />
+      </div>
+
+      <p className={styles.menuLabel} style={{ marginTop: "16px" }}>
         Rank by Stat (Left to Right)
       </p>
       <div className={styles.statGrid}>

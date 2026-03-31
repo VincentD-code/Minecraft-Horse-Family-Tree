@@ -8,6 +8,7 @@ export type HorseNodeData = {
   horse: Horse;
   label?: string;
   activeView?: 'speed' | 'jump' | 'health' | 'base';
+  showStatusMode?: boolean;
 };
 
 // 2. Define the specialized Node type for this component
@@ -22,18 +23,36 @@ function getContrastColor(hex: string): string {
   return (yiq >= 128) ? '#000000' : '#ffffff';
 }
 
+function darkenColor(hex: string, amount: number): string {
+  if (!hex || hex.length < 7) return '#222222';
+  let r = parseInt(hex.substring(1, 3), 16);
+  let g = parseInt(hex.substring(3, 5), 16);
+  let b = parseInt(hex.substring(5, 7), 16);
+
+  r = Math.max(0, Math.floor(r * (1 - amount)));
+  g = Math.max(0, Math.floor(g * (1 - amount)));
+  b = Math.max(0, Math.floor(b * (1 - amount)));
+
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+}
+
 export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
-  const { horse, activeView } = data;
+  const { horse, activeView, showStatusMode } = data;
   const {jump, health, speed, variant} = horse;
   const processedStats = translateStatsForDisplay({jump, health, speed, variant})
   const dnaColor = horse.hexColor || '#444444';
-  const textColor = getContrastColor(dnaColor);
+  
+  const isDeceased = horse.status === 0;
+  const useStatusStyling = showStatusMode && isDeceased;
+  
+  const backgroundColor = useStatusStyling ? darkenColor(dnaColor, 0.6) : dnaColor;
+  const textColor = getContrastColor(backgroundColor);
 
   const containerStyle: CSSProperties = {
-    backgroundColor: dnaColor,
+    backgroundColor: backgroundColor,
     borderColor: dnaColor,
     borderStyle: 'solid',
-    borderWidth: '1px',
+    borderWidth: '3px',
   };
 
 // Determine what label and value to show

@@ -42,6 +42,8 @@ function TreeContent({
     return savedView || "base";
   });
 
+  const [showStatusMode, setShowStatusMode] = useState(false);
+
   const [nodes, setNodes] = useState<HorseNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
 
@@ -51,9 +53,19 @@ function TreeContent({
         ? getBaseLayout(initialNodes, initialEdges)
         : getSortLayout(initialNodes, view);
 
-    setNodes(newNodes);
+    // Update nodes with showStatusMode
+    const updatedNodes = newNodes.map((node) => ({
+      ...node,
+      data: {
+        ...node.data,
+        activeView: view,
+        showStatusMode: showStatusMode,
+      },
+    }));
+
+    setNodes(updatedNodes);
     setEdges(initialEdges);
-  }, [view, initialNodes, initialEdges]);
+  }, [view, showStatusMode, initialNodes, initialEdges]);
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
@@ -68,7 +80,12 @@ function TreeContent({
 
   return (
     <div className={styles.container}>
-      <ViewMenu setView={setView} view={view} />
+      <ViewMenu 
+        setView={setView} 
+        view={view} 
+        showStatusMode={showStatusMode} 
+        setShowStatusMode={setShowStatusMode} 
+      />
 
       <Button onClick={() => setCreateModalOpen(true)} text="Add Horse" className={styles.addHorseButton} />
       <HorseCreateModal
