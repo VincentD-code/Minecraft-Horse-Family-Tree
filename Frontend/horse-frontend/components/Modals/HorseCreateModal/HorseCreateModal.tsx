@@ -29,7 +29,6 @@ export default function HorseCreateModalProps({
   setIsOpen,
   horses,
 }: HorseCreateModalProps) {
-  if (!isOpen) return null;
   const router = useRouter();
   const [formData, setFormData] = useState<createHorseData>({
     name: "Name",
@@ -42,6 +41,7 @@ export default function HorseCreateModalProps({
     variant: 1,
   });
   const [error, setError] = useState(false);
+  if (!isOpen) return null;
 
   const onClose = () => {
     setIsOpen(false);
@@ -70,7 +70,9 @@ export default function HorseCreateModalProps({
         <h2>Create New Horse</h2>
         <CreateHorseForm
           horses={horses}
-          setError={setError} formData={formData} setFormData={setFormData}
+          setError={setError}
+          formData={formData}
+          setFormData={setFormData}
         />
         <div className={styles.buttonRow}>
           <Button text="Close" onClick={onClose} />

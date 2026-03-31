@@ -5,11 +5,7 @@ import * as modalStyles from "../Modals.css";
 import * as styles from "./HorseEditModal.css";
 import Button from "@/components/Button/Button";
 import Switch from "@mui/material/Switch";
-import {
-  ProcessedStats,
-  translateStat,
-  untranslateStat,
-} from "@/utils/translateRawStats";
+import { translateStat, untranslateStat } from "@/utils/translateRawStats";
 import { FormControlLabel } from "@mui/material";
 import { HorseStats } from "@/utils/parseHorseStats";
 import StatsBox from "@/components/StatsBox/StatsBox";
@@ -21,7 +17,6 @@ interface HorseEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedHorse: Horse) => void;
-  processedStats: ProcessedStats;
 }
 
 export default function HorseEditModal({
@@ -30,7 +25,6 @@ export default function HorseEditModal({
   isOpen,
   onClose,
   onSave,
-  processedStats,
 }: HorseEditModalProps) {
   const [formData, setFormData] = useState({ ...horse });
   const [rawStatsView, setRawStatsView] = useState(false);
@@ -101,8 +95,8 @@ export default function HorseEditModal({
   return (
     <div className={modalStyles.overlay}>
       <div className={modalStyles.modal}>
+        {/* //allow for changing horse name as well, key by _id */}
         <h2>Edit {horse.name}</h2>
-
         {parentOptions.keys.length > 1 && (
           <>
             <label>Parent 1</label>
@@ -132,7 +126,6 @@ export default function HorseEditModal({
             />
           </>
         )}
-
         <label>Status</label>
         <Select
           options={statusOptions}
@@ -145,7 +138,6 @@ export default function HorseEditModal({
             }
           }}
         />
-
         <FormControlLabel
           control={
             <Switch
@@ -180,7 +172,6 @@ export default function HorseEditModal({
             />
           </>
         )}
-
         <div className={styles.buttonRow}>
           <Button onClick={onCancel} text="Cancel" />
           <Button onClick={() => onSave(formData)} text="Save Changes" />

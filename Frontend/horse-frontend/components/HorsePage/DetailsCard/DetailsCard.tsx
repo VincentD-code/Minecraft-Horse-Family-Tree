@@ -2,7 +2,6 @@ import { Horse } from "@/types/horse";
 import * as styles from "./DetailsCard.css";
 import { ProcessedStats } from "@/utils/translateRawStats";
 import { BloodlineDisplay } from "@/components/HorsePage/DetailsCard/BloodlineDisplay/BloodlineDisplay";
-import getHorseByIdAction from "@/actions/getHorseByIdAction";
 
 interface DetailsCardProps {
   horse: Horse;

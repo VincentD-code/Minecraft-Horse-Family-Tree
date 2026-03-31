@@ -3,11 +3,12 @@ import { createHorseData } from "@/components/Modals/HorseCreateModal/HorseCreat
 import { createHorse, getHorseById } from "@/lib/horses";
 import { createHorseRequest } from "@/types/horse";
 import { processNewHorseGenetics } from "@/utils/genetics/service";
-import { revalidatePath } from 'next/cache';
+import { revalidatePath } from "next/cache";
 
 export default async function createHorseAction(formData: createHorseData) {
   const parentId1 = formData.parentId1;
   const parentId2 = formData.parentId2;
+  //chnage this to allow for selection of bloodline for origin horses
 
   const [parent1, parent2] = await Promise.all([
     getHorseById(parentId1),

@@ -77,7 +77,6 @@ export default function HorsePage({
         isOpen={editMode}
         onClose={() => setEditMode(false)}
         onSave={onSaveEdits}
-        processedStats={processedStats}
       />
 
       <HorseDeleteModal isOpen={deleteMode} onClose={() => setDeleteMode(false)} onConfirm={onDeleteConfirm} />

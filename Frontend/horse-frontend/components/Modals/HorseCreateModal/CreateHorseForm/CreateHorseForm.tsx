@@ -23,10 +23,6 @@ export default function CreateHorseForm({
   setFormData,
 }: CreateHorseFormProps) {
 
-  useEffect(() => {
-    console.log(formData);
-  }, [formData]);
-
   const handleSelectChange = (
     field: keyof createHorseData,
     value: string | number | undefined,
@@ -56,13 +52,6 @@ export default function CreateHorseForm({
         [field]: untranslateStat(field, numericValue),
       }));
     }
-  };
-
-  const handleStatusChange = (value: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      status: value,
-    }));
   };
 
   useEffect(() => {

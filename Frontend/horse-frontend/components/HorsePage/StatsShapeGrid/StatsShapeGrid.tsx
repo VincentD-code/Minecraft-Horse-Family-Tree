@@ -37,7 +37,7 @@ export default function StatsShapeGrid({
       />
       <StatShapeCard
         label="Generation"
-        value={horse.generation}
+        value={horse.generation.toString()}
         subtext="LINEAGE DEPTH"
         shapeId="generation"
         horseColor={horseColor}

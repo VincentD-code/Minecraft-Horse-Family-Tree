@@ -5,11 +5,9 @@ import {
   ReactFlowProvider,
   applyNodeChanges,
   applyEdgeChanges,
-  Node,
   Edge,
   OnNodesChange,
   OnEdgesChange,
-  NodeChange,
 } from "@xyflow/react";
 import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -67,13 +65,13 @@ function TreeContent({
   }, [view, initialNodes, initialEdges]);
 
   // 3. Update state AND cookie when toggling
-  const toggleView = (mode: ViewMode) => {
-    setView(mode);
-    setCookie("horse-tree-view", mode, { maxAge: 60 * 60 * 24 * 30 }); // Save for 30 days
+  // const toggleView = (mode: ViewMode) => {
+  //   setView(mode);
+  //   setCookie("horse-tree-view", mode, { maxAge: 60 * 60 * 24 * 30 }); // Save for 30 days
 
-    // Smooth transition
-    setTimeout(() => fitView({ duration: 800 }), 50);
-  };
+  //   // Smooth transition
+  //   setTimeout(() => fitView({ duration: 800 }), 50);
+  // };
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
@@ -89,7 +87,7 @@ function TreeContent({
   return (
     <div className={styles.container}>
       {/* Floating Menu */}
-      <ViewMenu setView={setView} isMounted={isMounted} view={view}/>
+      <ViewMenu setView={setView} isMounted={isMounted} view={view} />
 
       <Button onClick={() => setCreateModalOpen(true)} text="Add Horse" />
       <HorseCreateModal

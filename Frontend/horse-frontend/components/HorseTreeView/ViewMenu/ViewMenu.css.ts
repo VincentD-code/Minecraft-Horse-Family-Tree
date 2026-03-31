@@ -11,7 +11,8 @@ export const menuWrapper = style({
   backgroundColor: "white",
   padding: "12px",
   borderRadius: "8px",
-  boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+  boxShadow:
+    "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
   border: "1px solid #e5e7eb",
   width: "256px",
 });
@@ -39,40 +40,55 @@ const buttonBase = style({
   gap: "8px",
 });
 
-export const statButtonActive = style([buttonBase, {
-  fontSize: "10px",
-  backgroundColor: "#16a34a",
-  color: "white",
-  textTransform: "capitalize",
-}]);
+export const statButtonActive = style([
+  buttonBase,
+  {
+    fontSize: "10px",
+    backgroundColor: "#16a34a",
+    color: "white",
+    textTransform: "capitalize",
+  },
+]);
 
-export const statButtonInactive = style([buttonBase, {
-  fontSize: "10px",
-  backgroundColor: "#f3f4f6",
-  color: "#6b7280",
-  textTransform: "capitalize",
-  ":hover": { backgroundColor: "#e5e7eb" },
-}]);
+export const statButtonInactive = style([
+  buttonBase,
+  {
+    fontSize: "10px",
+    backgroundColor: "#f3f4f6",
+    color: "#6b7280",
+    textTransform: "capitalize",
+    ":hover": { backgroundColor: "#e5e7eb" },
+  },
+]);
 
-export const resetButton = style([buttonBase, {
-  marginTop: "16px",
-  backgroundColor: "#1f2937",
-  color: "white",
-  ":hover": { backgroundColor: "#000000" },
-}]);
+export const resetButton = style([
+  buttonBase,
+  {
+    marginTop: "16px",
+    backgroundColor: "#1f2937",
+    color: "white",
+    ":hover": { backgroundColor: "#000000" },
+  },
+]);
 
-export const baseButtonActive = style([buttonBase, {
-  backgroundColor: "#2563eb",
-  color: "white",
-  marginBottom: "4px",
-}]);
+export const baseButtonActive = style([
+  buttonBase,
+  {
+    backgroundColor: "#2563eb",
+    color: "white",
+    marginBottom: "4px",
+  },
+]);
 
-export const baseButtonInactive = style([buttonBase, {
-  backgroundColor: "#f3f4f6",
-  color: "#4b5563",
-  marginBottom: "4px",
-  ":hover": { backgroundColor: "#e5e7eb" },
-}]);
+export const baseButtonInactive = style([
+  buttonBase,
+  {
+    backgroundColor: "#f3f4f6",
+    color: "#4b5563",
+    marginBottom: "4px",
+    ":hover": { backgroundColor: "#e5e7eb" },
+  },
+]);
 
 export const statGrid = style({
   display: "grid",

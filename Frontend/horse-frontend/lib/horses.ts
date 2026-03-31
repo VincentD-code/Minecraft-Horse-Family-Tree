@@ -1,7 +1,7 @@
-import { Collection, Document, ObjectId } from "mongodb";
+import { Collection, Document, ObjectId, WithId } from "mongodb";
 import clientPromise from "./mongodb";
 import { createHorseRequest, editHorseRequest, Horse } from "@/types/horse";
-import { unstable_noStore as noStore } from 'next/cache';
+import { unstable_noStore as noStore } from "next/cache";
 
 export async function getAllHorses(): Promise<Horse[]> {
   noStore();
@@ -10,7 +10,7 @@ export async function getAllHorses(): Promise<Horse[]> {
 
     const data = await horses.find({}).toArray();
 
-    const horseList: Horse[] = data.map((row: any) => ({
+    const horseList: Horse[] = data.map((row: WithId<Document>) => ({
       id: String(row._id).trim(),
       name: row.name || "Unknown",
       parentId1: row.parentId1 || null,
@@ -116,14 +116,15 @@ export async function deleteHorse(id: string): Promise<boolean> {
   }
 }
 
-async function getCollection(): Promise<Collection<Document>>{
+async function getCollection(): Promise<Collection<Document>> {
   const db_name = process.env.DB_NAME;
-    const collection_name = process.env.COLLECTION_NAME;
-    if (!db_name || !collection_name) throw new Error("Database or Collection not set");
+  const collection_name = process.env.COLLECTION_NAME;
+  if (!db_name || !collection_name)
+    throw new Error("Database or Collection not set");
 
-    const client = await clientPromise;
-    const db = client.db(db_name);
-    const horses = db.collection(collection_name);
-    if (!horses) throw new Error("Collection not found");
-    return horses;
+  const client = await clientPromise;
+  const db = client.db(db_name);
+  const horses = db.collection(collection_name);
+  if (!horses) throw new Error("Collection not found");
+  return horses;
 }
