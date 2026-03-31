@@ -23,7 +23,6 @@ export default async function editHorseAction(horse: Horse, formData: Horse) {
   
 
   const data: editHorseRequest = {
-    id: horse.id,
     name: horse.name,
     parentId1: formData.parentId1,
     parentId2: formData.parentId2,

@@ -8,9 +8,9 @@ import HorsePageHeader from "./HorsePageHeader/HorsePageHeader";
 import StatsShapeGrid from "./StatsShapeGrid/StatsShapeGrid";
 import DetailsCard from "./DetailsCard/DetailsCard";
 import { useState } from "react";
-import HorseEditModal from "./Modals/HorseEditModal/HorseEditModal";
+import HorseEditModal from "@/components/Modals/HorseEditModal/HorseEditModal"
 import editHorseAction from "@/actions/editHorseAction";
-import HorseDeleteModal from "./Modals/HorseDeleteModal/HorseDeleteModal";
+import HorseDeleteModal from "@/components/Modals/HorseDeleteModal/HorseDeleteModal"
 import deleteHorseAction from "@/actions/deleteHorseAction";
 
 export default function HorsePage({
@@ -44,13 +44,13 @@ export default function HorsePage({
     variant,
   });
 
-  const onSaveEdits = (formData: Horse) => {
-    editHorseAction(horse, formData);
+  const onSaveEdits = async (formData: Horse) => {
+    await editHorseAction(horse, formData);
     setEditMode(false);
   }
 
-  const onDeleteConfirm = () => {
-    deleteHorseAction(horse.id);
+  const onDeleteConfirm = async () => {
+    await deleteHorseAction(horse.id);
     router.push("/horses");
   }
 
@@ -77,7 +77,6 @@ export default function HorsePage({
         isOpen={editMode}
         onClose={() => setEditMode(false)}
         onSave={onSaveEdits}
-        processedStats={processedStats}
       />
 
       <HorseDeleteModal isOpen={deleteMode} onClose={() => setDeleteMode(false)} onConfirm={onDeleteConfirm} />

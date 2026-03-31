@@ -1,4 +1,4 @@
-import { style, globalStyle } from "@vanilla-extract/css";
+import { style } from "@vanilla-extract/css";
 
 export const header = style({
   display: "flex",
@@ -11,7 +11,7 @@ export const header = style({
 export const statusAlive = style({
   padding: "6px 16px",
   borderRadius: "99px",
-  backgroundColor: "#2d4a3e", 
+  backgroundColor: "#2d4a3e",
   color: "#fdfbf7",
   fontSize: "13px",
   fontWeight: 700,

@@ -49,7 +49,7 @@ export default async function HomePage() {
 
   return (
     <main className="h-screen w-full" suppressHydrationWarning>
-      <HorseTreeView initialNodes={nodes} initialEdges={edges} key={dataKey}/>
+      <HorseTreeView initialNodes={nodes} initialEdges={edges} key={dataKey} horses={horses}/>
     </main>
   );
 }

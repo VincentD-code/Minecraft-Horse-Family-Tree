@@ -1,6 +1,6 @@
-import { Horse, horseDna } from "@/types/horse";
+import { horseDna } from "@/types/horse";
 import { BLOODLINE_COLORS } from "@/utils/genetics/utils";
-import * as styles from './BloodlineDisplay.css';
+import * as styles from "./BloodlineDisplay.css";
 
 interface BloodlineDisplayProps {
   dna: horseDna;
@@ -25,15 +25,17 @@ export function BloodlineDisplay({ dna }: BloodlineDisplayProps) {
             <div key={name} className={styles.bloodlineRow}>
               <div className={styles.bloodlineInfo}>
                 <span className={styles.bloodlineName}>{name}</span>
-                <span className={styles.bloodlinePercent}>{percentageValue}%</span>
+                <span className={styles.bloodlinePercent}>
+                  {percentageValue}%
+                </span>
               </div>
               <div className={styles.progressTrack}>
-                <div 
-                  className={styles.progressBar} 
-                  style={{ 
-                    width, 
-                    backgroundColor: color 
-                  }} 
+                <div
+                  className={styles.progressBar}
+                  style={{
+                    width,
+                    backgroundColor: color,
+                  }}
                 />
               </div>
             </div>

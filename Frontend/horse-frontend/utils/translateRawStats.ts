@@ -1,5 +1,3 @@
-import { Horse } from "@/types/horse";
-
 export interface RawStats {
     speed: number;
     jump: number;

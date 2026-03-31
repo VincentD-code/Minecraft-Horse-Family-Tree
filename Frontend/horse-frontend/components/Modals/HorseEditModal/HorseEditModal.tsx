@@ -5,11 +5,7 @@ import * as modalStyles from "../Modals.css";
 import * as styles from "./HorseEditModal.css";
 import Button from "@/components/Button/Button";
 import Switch from "@mui/material/Switch";
-import {
-  ProcessedStats,
-  translateStat,
-  untranslateStat,
-} from "@/utils/translateRawStats";
+import { translateStat, untranslateStat } from "@/utils/translateRawStats";
 import { FormControlLabel } from "@mui/material";
 import { HorseStats } from "@/utils/parseHorseStats";
 import StatsBox from "@/components/StatsBox/StatsBox";
@@ -21,7 +17,6 @@ interface HorseEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedHorse: Horse) => void;
-  processedStats: ProcessedStats;
 }
 
 export default function HorseEditModal({
@@ -30,7 +25,6 @@ export default function HorseEditModal({
   isOpen,
   onClose,
   onSave,
-  processedStats,
 }: HorseEditModalProps) {
   const [formData, setFormData] = useState({ ...horse });
   const [rawStatsView, setRawStatsView] = useState(false);
@@ -44,7 +38,10 @@ export default function HorseEditModal({
     setDisplayStats({
       speed: translateStat("speed", formData.speed).toString(),
       health: translateStat("health", formData.health).toString(),
-      jump: translateStat("jump", formData.jump).toString(),
+      jump:
+        translateStat("jump", formData.jump) < 0
+          ? "0"
+          : translateStat("jump", formData.jump).toString(),
     });
   }, [formData.speed, formData.health, formData.jump]);
 
@@ -91,13 +88,6 @@ export default function HorseEditModal({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleStatChange = (field: string, value: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: untranslateStat(field, value),
-    }));
-  };
-
   const handleViewChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRawStatsView(!event.target.checked);
   };
@@ -105,33 +95,37 @@ export default function HorseEditModal({
   return (
     <div className={modalStyles.overlay}>
       <div className={modalStyles.modal}>
+        {/* //allow for changing horse name as well, key by _id */}
         <h2>Edit {horse.name}</h2>
-        <label>Parent 1</label>
-        <Select
-          options={parentOptions}
-          isClearable={false}
-          defaultValue={parentOptions.find(
-            (opt) => opt.value === horse.parentId1,
-          )}
-          onChange={(selected) => {
-            if (selected) {
-              handleChange("parentId1", selected.value);
-            }
-          }}
-        />
-        <label>Parent 2</label>
-        <Select
-          options={parentOptions}
-          defaultValue={parentOptions.find(
-            (opt) => opt.value === horse.parentId2,
-          )}
-          onChange={(selected) => {
-            if (selected) {
-              handleChange("parentId2", selected.value);
-            }
-          }}
-        />
-
+        {parentOptions.keys.length > 1 && (
+          <>
+            <label>Parent 1</label>
+            <Select
+              options={parentOptions}
+              isClearable={false}
+              defaultValue={parentOptions.find(
+                (opt) => opt.value === horse.parentId1,
+              )}
+              onChange={(selected) => {
+                if (selected) {
+                  handleChange("parentId1", selected.value);
+                }
+              }}
+            />
+            <label>Parent 2</label>
+            <Select
+              options={parentOptions}
+              defaultValue={parentOptions.find(
+                (opt) => opt.value === horse.parentId2,
+              )}
+              onChange={(selected) => {
+                if (selected) {
+                  handleChange("parentId2", selected.value);
+                }
+              }}
+            />
+          </>
+        )}
         <label>Status</label>
         <Select
           options={statusOptions}
@@ -144,7 +138,6 @@ export default function HorseEditModal({
             }
           }}
         />
-
         <FormControlLabel
           control={
             <Switch
@@ -179,7 +172,6 @@ export default function HorseEditModal({
             />
           </>
         )}
-
         <div className={styles.buttonRow}>
           <Button onClick={onCancel} text="Cancel" />
           <Button onClick={() => onSave(formData)} text="Save Changes" />
