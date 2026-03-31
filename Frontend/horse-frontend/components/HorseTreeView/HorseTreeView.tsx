@@ -1,7 +1,6 @@
 "use client";
 import {
   ReactFlow,
-  useReactFlow,
   ReactFlowProvider,
   applyNodeChanges,
   applyEdgeChanges,
@@ -11,7 +10,7 @@ import {
 } from "@xyflow/react";
 import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
-import { getCookie, setCookie } from "cookies-next";
+import { getCookie } from "cookies-next";
 import { getBaseLayout, getSortLayout } from "@/utils/layout";
 import "@xyflow/react/dist/style.css";
 import CustomHorseNode, { HorseNode } from "../HorseNode/HorseNode";
@@ -36,10 +35,8 @@ function TreeContent({
   horses,
 }: HorseTreeViewProps) {
   const router = useRouter();
-  const { fitView } = useReactFlow();
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  // 1. Initialize state from Cookie (falling back to 'base')
   const [view, setView] = useState<ViewMode>(() => {
     const savedView = getCookie("horse-tree-view") as ViewMode;
     return savedView || "base";
@@ -47,13 +44,7 @@ function TreeContent({
 
   const [nodes, setNodes] = useState<HorseNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
-  const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // 2. Update layout when the view state changes
   useEffect(() => {
     const newNodes =
       view === "base"
@@ -63,15 +54,6 @@ function TreeContent({
     setNodes(newNodes);
     setEdges(initialEdges);
   }, [view, initialNodes, initialEdges]);
-
-  // 3. Update state AND cookie when toggling
-  // const toggleView = (mode: ViewMode) => {
-  //   setView(mode);
-  //   setCookie("horse-tree-view", mode, { maxAge: 60 * 60 * 24 * 30 }); // Save for 30 days
-
-  //   // Smooth transition
-  //   setTimeout(() => fitView({ duration: 800 }), 50);
-  // };
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
@@ -86,10 +68,9 @@ function TreeContent({
 
   return (
     <div className={styles.container}>
-      {/* Floating Menu */}
-      <ViewMenu setView={setView} isMounted={isMounted} view={view} />
+      <ViewMenu setView={setView} view={view} />
 
-      <Button onClick={() => setCreateModalOpen(true)} text="Add Horse" />
+      <Button onClick={() => setCreateModalOpen(true)} text="Add Horse" className={styles.addHorseButton} />
       <HorseCreateModal
         isOpen={createModalOpen}
         setIsOpen={setCreateModalOpen}
@@ -111,7 +92,6 @@ function TreeContent({
   );
 }
 
-// 4. Wrap with Suspense to prevent build errors with searchParams
 export default function HorseTreeView(props: HorseTreeViewProps) {
   return (
     <ReactFlowProvider>

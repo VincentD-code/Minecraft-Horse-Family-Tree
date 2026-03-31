@@ -44,13 +44,13 @@ export default function HorsePage({
     variant,
   });
 
-  const onSaveEdits = (formData: Horse) => {
-    editHorseAction(horse, formData);
+  const onSaveEdits = async (formData: Horse) => {
+    await editHorseAction(horse, formData);
     setEditMode(false);
   }
 
-  const onDeleteConfirm = () => {
-    deleteHorseAction(horse.id);
+  const onDeleteConfirm = async () => {
+    await deleteHorseAction(horse.id);
     router.push("/horses");
   }
 

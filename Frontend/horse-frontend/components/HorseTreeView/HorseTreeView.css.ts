@@ -16,3 +16,8 @@ export const loadingFallback = style({
   color: "#9ca3af",
   fontWeight: 500,
 });
+
+export const addHorseButton = style({
+  position: "absolute",
+  left: "10px"
+})

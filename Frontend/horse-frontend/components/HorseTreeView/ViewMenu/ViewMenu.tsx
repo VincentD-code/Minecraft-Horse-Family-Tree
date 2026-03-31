@@ -7,11 +7,10 @@ import Button from "@/components/Button/Button";
 
 interface ViewMenuProps {
   setView: Dispatch<SetStateAction<ViewMode>>;
-  isMounted: boolean;
   view: ViewMode;
 }
 
-export default function ViewMenu({ setView, isMounted, view }: ViewMenuProps) {
+export default function ViewMenu({ setView, view }: ViewMenuProps) {
   const { fitView } = useReactFlow();
   const toggleView = (mode: ViewMode) => {
     setView(mode);
@@ -27,7 +26,7 @@ export default function ViewMenu({ setView, isMounted, view }: ViewMenuProps) {
       <Button
         onClick={() => toggleView("base")}
         className={
-          isMounted && view === "base"
+          view === "base"
             ? styles.baseButtonActive
             : styles.baseButtonInactive
         }
@@ -43,7 +42,7 @@ export default function ViewMenu({ setView, isMounted, view }: ViewMenuProps) {
             key={stat}
             onClick={() => toggleView(stat)}
             className={
-              isMounted && view === stat
+              view === stat
                 ? styles.statButtonActive
                 : styles.statButtonInactive
             }
