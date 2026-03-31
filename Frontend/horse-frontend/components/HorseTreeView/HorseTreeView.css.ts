@@ -18,6 +18,7 @@ export const loadingFallback = style({
 });
 
 export const addHorseButton = style({
+  zIndex: 1000,
   position: "absolute",
   left: "10px"
 })
