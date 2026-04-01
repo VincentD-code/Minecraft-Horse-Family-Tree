@@ -3,14 +3,6 @@ import clientPromise from "./mongodb";
 import { createHorseRequest, editHorseRequest, Horse } from "@/types/horse";
 import { unstable_noStore as noStore } from "next/cache";
 
-function parseStatus(status: any): number {
-  if (status === undefined || status === null) return 1;
-  const s = String(status).toLowerCase();
-  if (s === "0" || s === "dead") return 0;
-  if (s === "1" || s === "alive") return 1;
-  return 1; // Default to alive
-}
-
 export async function getAllHorses(): Promise<Horse[]> {
   noStore();
   try {
@@ -23,7 +15,7 @@ export async function getAllHorses(): Promise<Horse[]> {
       name: row.name || "Unknown",
       parentId1: row.parentId1 || null,
       parentId2: row.parentId2 || null,
-      status: parseStatus(row.status),
+      status: row.status,
       speed: parseFloat(row.speed) || 0,
       jump: parseFloat(row.jump) || 0,
       health: parseFloat(row.health) || 0,
@@ -56,7 +48,7 @@ export async function getHorseById(id: string): Promise<Horse | undefined> {
       name: response.name || "Unknown",
       parentId1: response.parentId1 || null,
       parentId2: response.parentId2 || null,
-      status: parseStatus(response.status),
+      status: response.status,
       speed: parseFloat(response.speed) || 0,
       jump: parseFloat(response.jump) || 0,
       health: parseFloat(response.health) || 0,
