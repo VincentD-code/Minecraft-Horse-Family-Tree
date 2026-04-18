@@ -4,7 +4,7 @@ export const menuWrapper = style({
   position: "absolute",
   top: "16px",
   right: "16px",
-  zIndex: 50,
+  zIndex: 100, // Increased z-index
   display: "flex",
   flexDirection: "column",
   gap: "8px",
@@ -14,6 +14,58 @@ export const menuWrapper = style({
   boxShadow:
     "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
   border: "1px solid #e5e7eb",
+  transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease",
+});
+
+export const menuClosed = style({
+  transform: "translateX(calc(100% + 20px))",
+  opacity: 0,
+  pointerEvents: "none",
+});
+
+export const toggleButton = style({
+  position: "absolute",
+  top: "16px",
+  right: "16px",
+  zIndex: 90,
+  backgroundColor: "white",
+  border: "1px solid #e5e7eb",
+  borderRadius: "8px",
+  padding: "8px 12px",
+  cursor: "pointer",
+  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+  fontSize: "12px",
+  fontWeight: "bold",
+  color: "#2d4a3e",
+  transition: "all 0.2s",
+  display: "flex",
+  alignItems: "center",
+  gap: "6px",
+  ":hover": {
+    backgroundColor: "#f9fafb",
+    transform: "translateY(-1px)",
+  },
+});
+
+export const closeButton = style({
+  alignSelf: "flex-end",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  fontSize: "16px",
+  color: "#9ca3af",
+  padding: "4px",
+  lineHeight: 1,
+  ":hover": {
+    color: "#374151",
+  },
+});
+
+export const menuHeader = style({
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "4px",
 });
 
 export const menuLabel = style({
