@@ -4,19 +4,27 @@ import * as styles from "./ViewMenu.css";
 import { setCookie } from "cookies-next";
 import { useReactFlow } from "@xyflow/react";
 import Button from "@/components/Button/Button";
+import Switch from "@/components/Switch/Switch";
 
 interface ViewMenuProps {
   setView: Dispatch<SetStateAction<ViewMode>>;
   view: ViewMode;
+  statusView: boolean;
+  setStatusView: Dispatch<SetStateAction<boolean>>;
 }
 
-export default function ViewMenu({ setView, view }: ViewMenuProps) {
+export default function ViewMenu({ setView, view, statusView, setStatusView }: ViewMenuProps) {
   const { fitView } = useReactFlow();
   const toggleView = (mode: ViewMode) => {
     setView(mode);
     setCookie("horse-tree-view", mode, { maxAge: 60 * 60 * 24 * 30 }); // Save for 30 days
 
     setTimeout(() => fitView({ duration: 800 }), 50);
+  };
+
+  const handleStatusToggle = (checked: boolean) => {
+    setStatusView(checked);
+    setCookie("horse-status-view", checked ? "true" : "false", { maxAge: 60 * 60 * 24 * 30 });
   };
 
   return (
@@ -31,6 +39,15 @@ export default function ViewMenu({ setView, view }: ViewMenuProps) {
             : styles.baseButtonInactive
         }
         text="Traditional Lineage Tree"
+      />
+
+      <p className={styles.menuLabel} style={{ marginTop: "16px" }}>
+        View Filters
+      </p>
+      <Switch 
+        label="Dead/Alive Highlight" 
+        checked={statusView} 
+        onChange={handleStatusToggle} 
       />
 
       <p className={styles.menuLabel} style={{ marginTop: "8px" }}>
