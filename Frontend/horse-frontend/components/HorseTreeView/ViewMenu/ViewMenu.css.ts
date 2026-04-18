@@ -17,11 +17,12 @@ export const menuWrapper = style({
 });
 
 export const menuLabel = style({
-  fontSize: "10px",
-  fontWeight: "bold",
-  color: "#9ca3af",
+  fontSize: "11px",
+  fontWeight: 800,
+  color: "#2d4a3e",
   textTransform: "uppercase",
   letterSpacing: "0.1em",
+  marginBottom: "4px",
 });
 
 const buttonBase = style({

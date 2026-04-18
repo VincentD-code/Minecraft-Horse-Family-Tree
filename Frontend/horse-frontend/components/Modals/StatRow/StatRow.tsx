@@ -15,7 +15,7 @@ export default function StatRow({
 }: StatRowProps) {
   return (
     <div className={styles.statRow}>
-      <label>{text}</label>
+      <label className={styles.label}>{text}</label>
       <input
         className={styles.statInput}
         type="text"

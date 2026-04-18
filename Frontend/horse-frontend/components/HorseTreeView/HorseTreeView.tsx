@@ -15,7 +15,7 @@ import { getBaseLayout, getSortLayout } from "@/utils/layout";
 import "@xyflow/react/dist/style.css";
 import CustomHorseNode, { HorseNode } from "../HorseNode/HorseNode";
 import * as styles from "./HorseTreeView.css";
-import Button from "../Button/Button";
+import Button from "../Common/Button/Button";
 import HorseCreateModal from "../Modals/HorseCreateModal/HorseCreateModal";
 import { Horse } from "@/types/horse";
 import ViewMenu from "./ViewMenu/ViewMenu";

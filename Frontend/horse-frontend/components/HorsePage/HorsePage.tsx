@@ -3,7 +3,7 @@ import { Horse } from "@/types/horse";
 import { useRouter } from "next/navigation";
 import * as styles from "./HorsePage.css";
 import { translateStatsForDisplay } from "@/utils/translateRawStats";
-import Button from "../Button/Button";
+import Button from "../Common/Button/Button";
 import HorsePageHeader from "./HorsePageHeader/HorsePageHeader";
 import StatsShapeGrid from "./StatsShapeGrid/StatsShapeGrid";
 import DetailsCard from "./DetailsCard/DetailsCard";

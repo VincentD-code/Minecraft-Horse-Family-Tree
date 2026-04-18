@@ -3,13 +3,14 @@ import { useEffect, useState } from "react";
 import Select from "react-select";
 import * as modalStyles from "../Modals.css";
 import * as styles from "./HorseEditModal.css";
-import Button from "@/components/Button/Button";
-import Switch from "@mui/material/Switch";
+import Button from "@/components/Common/Button/Button";
+import Switch from "@/components/Common/Switch/Switch";
 import { translateStat, untranslateStat } from "@/utils/translateRawStats";
-import { FormControlLabel } from "@mui/material";
 import { HorseStats } from "@/utils/parseHorseStats";
-import StatsBox from "@/components/StatsBox/StatsBox";
-import StatRow from "./StatRow/StatRow";
+import StatsBox from "@/components/Common/StatsBox/StatsBox";
+import StatRow from "../StatRow/StatRow";
+
+import * as statRowStyles from "../StatRow/StatRow.css";
 
 interface HorseEditModalProps {
   horse: Horse;
@@ -97,9 +98,9 @@ export default function HorseEditModal({
       <div className={modalStyles.modal}>
         {/* //allow for changing horse name as well, key by _id */}
         <h2>Edit {horse.name}</h2>
-        {parentOptions.keys.length > 1 && (
+        {parentOptions.length > 1 && (
           <>
-            <label>Parent 1</label>
+            <label className={statRowStyles.label}>Parent 1</label>
             <Select
               options={parentOptions}
               isClearable={false}
@@ -112,7 +113,7 @@ export default function HorseEditModal({
                 }
               }}
             />
-            <label>Parent 2</label>
+            <label className={statRowStyles.label}>Parent 2</label>
             <Select
               options={parentOptions}
               defaultValue={parentOptions.find(
@@ -126,7 +127,7 @@ export default function HorseEditModal({
             />
           </>
         )}
-        <label>Status</label>
+        <label className={statRowStyles.label}>Status</label>
         <Select
           options={statusOptions}
           defaultValue={statusOptions.find(
@@ -138,15 +139,11 @@ export default function HorseEditModal({
             }
           }}
         />
-        <FormControlLabel
-          control={
-            <Switch
-              checked={!rawStatsView}
-              onChange={handleViewChange}
-              size="small"
-            />
-          }
+        <Switch
           label={rawStatsView ? "Raw Stats" : "Processed Stats"}
+          checked={!rawStatsView}
+          onChange={(checked) => setRawStatsView(!checked)}
+          labelLeft={false}
         />
         {rawStatsView ? (
           <StatsBox onStatsParsed={handleImportedStats} />

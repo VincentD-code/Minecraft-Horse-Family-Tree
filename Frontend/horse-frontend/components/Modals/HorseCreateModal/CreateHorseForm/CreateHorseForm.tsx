@@ -4,10 +4,10 @@ import { HorseStats } from "@/utils/parseHorseStats";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import Select from "react-select";
 import * as styles from "./CreateHorseForm.css";
-import StatsBox from "@/components/StatsBox/StatsBox";
-import ViewSwitch from "../../ViewSwitch/ViewSwitch";
+import StatsBox from "@/components/Common/StatsBox/StatsBox";
+import Switch from "@/components/Common/Switch/Switch";
 import { translateStat, untranslateStat } from "@/utils/translateRawStats";
-import StatRow from "../../HorseEditModal/StatRow/StatRow";
+import StatRow from "../../StatRow/StatRow";
 import { createHorseData } from "../HorseCreateModal";
 
 export interface CreateHorseFormProps {
@@ -92,7 +92,7 @@ export default function CreateHorseForm({
       <form>
         <div className={styles.fields}>
           <div className={styles.nameRow}>
-            <label>Name</label>
+            <label className={styles.label}>Name</label>
             <input
               value={formData.name}
               onChange={(e) => setFormData((prev: createHorseData) => ({...prev, name: e.target.value}))}
@@ -128,9 +128,11 @@ export default function CreateHorseForm({
             className={styles.field}
           />
 
-          <ViewSwitch
-            rawStatsView={statsView}
-            handleViewChange={handleViewChange}
+          <Switch
+            label={statsView ? "Raw Stats" : "Processed Stats"}
+            checked={!statsView}
+            onChange={(checked) => setStatsView(!checked)}
+            labelLeft={false}
           />
 
           {statsView ? (

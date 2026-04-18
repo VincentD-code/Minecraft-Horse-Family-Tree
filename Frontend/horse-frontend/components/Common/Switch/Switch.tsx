@@ -5,11 +5,12 @@ interface SwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label?: string;
+  labelLeft?: boolean;
 }
 
-export default function Switch({ checked, onChange, label }: SwitchProps) {
+export default function Switch({ checked, onChange, label, labelLeft = true }: SwitchProps) {
   return (
-    <div className={styles.switchWrapper}>
+    <div className={`${styles.switchWrapper} ${!labelLeft ? styles.reverse : ""}`}>
       {/* 1. The label text (e.g., "Toggle Theme") */}
       {label && <span className={styles.label}>{label}</span>}
       

@@ -3,8 +3,8 @@ import { ViewMode } from "../HorseTreeView";
 import * as styles from "./ViewMenu.css";
 import { setCookie } from "cookies-next";
 import { useReactFlow } from "@xyflow/react";
-import Button from "@/components/Button/Button";
-import Switch from "@/components/Switch/Switch";
+import Button from "@/components/Common/Button/Button";
+import Switch from "@/components/Common/Switch/Switch";
 
 interface ViewMenuProps {
   setView: Dispatch<SetStateAction<ViewMode>>;

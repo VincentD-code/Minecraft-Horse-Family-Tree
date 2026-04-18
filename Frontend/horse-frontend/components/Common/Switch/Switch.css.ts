@@ -7,6 +7,11 @@ export const switchWrapper = style({
   margin: "10px 0",
 });
 
+export const reverse = style({
+  flexDirection: "row-reverse",
+  justifyContent: "flex-end",
+});
+
 export const label = style({
   textTransform: "uppercase",
   letterSpacing: "0.1em",
