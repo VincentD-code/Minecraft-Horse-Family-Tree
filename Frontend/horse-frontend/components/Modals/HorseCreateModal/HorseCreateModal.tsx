@@ -1,4 +1,4 @@
-import Button from "@/components/Button/Button";
+import Button from "@/components/Common/Button/Button";
 import * as modalStyles from "../Modals.css";
 import * as styles from "./HorseCreateModal.css";
 import CreateHorseForm from "./CreateHorseForm/CreateHorseForm";
