@@ -8,35 +8,33 @@ import HorseCreateModal from "@/components/Modals/HorseCreateModal/HorseCreateMo
 import { Horse } from "@/types/horse";
 import Image from "next/image";
 import { getHorseVariantImage } from "@/utils/variant";
+import getHorsesByIdsAction from "@/actions/getHorsesByIdsAction";
 
 interface SidebarProps {
-  horses: Horse[];
+  fallbackHorses: Horse[];
 }
 
-export default function Sidebar({ horses }: SidebarProps) {
+export default function Sidebar({ fallbackHorses }: SidebarProps) {
   const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recentViewed, setRecentViewed] = useState<Horse[]>([]);
 
   useEffect(() => {
-    const updateRecent = () => {
+    const updateRecent = async () => {
       const stored = localStorage.getItem("recently-viewed-horses");
       if (stored) {
         const ids: string[] = JSON.parse(stored);
-        const viewedHorses = ids
-          .map(id => horses.find(h => h.id === id))
-          .filter((h): h is Horse => !!h);
+        const viewedHorses = await getHorsesByIdsAction(ids);
         setRecentViewed(viewedHorses.slice(0, 5));
       } else {
-        // Fallback to most recently created
-        setRecentViewed([...horses].slice(-5).reverse());
+        setRecentViewed(fallbackHorses);
       }
     };
 
     updateRecent();
     window.addEventListener("storage", updateRecent);
     return () => window.removeEventListener("storage", updateRecent);
-  }, [horses]);
+  }, [fallbackHorses]);
 
   const navItems = [
     { label: "Dashboard", href: "/", icon: "📊" },
@@ -109,7 +107,6 @@ export default function Sidebar({ horses }: SidebarProps) {
       <HorseCreateModal
         isOpen={isModalOpen}
         setIsOpen={setIsModalOpen}
-        horses={horses}
       />
     </>
   );

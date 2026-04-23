@@ -38,23 +38,24 @@ function TreeContent({
 }: HorseTreeViewProps) {
   const router = useRouter();
 
-  const [view, setView] = useState<ViewMode>(() => {
-    const savedView = getCookie("horse-tree-view") as ViewMode;
-    return savedView || "base";
-  });
-
-  const [statusView, setStatusView] = useState<boolean>(() => {
-    const saved = getCookie("horse-status-view");
-    return saved === "true";
-  });
-
-  const [compactView, setCompactView] = useState<boolean>(() => {
-    const saved = getCookie("horse-compact-view");
-    return saved === "true";
-  });
+  const [view, setView] = useState<ViewMode>("base");
+  const [statusView, setStatusView] = useState<boolean>(false);
+  const [compactView, setCompactView] = useState<boolean>(false);
 
   const [nodes, setNodes] = useState<HorseNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
+
+  // Initial cookie sync
+  useEffect(() => {
+    const savedView = getCookie("horse-tree-view") as ViewMode;
+    if (savedView) setView(savedView);
+
+    const savedStatus = getCookie("horse-status-view");
+    if (savedStatus !== undefined) setStatusView(savedStatus === "true");
+
+    const savedCompact = getCookie("horse-compact-view");
+    if (savedCompact !== undefined) setCompactView(savedCompact === "true");
+  }, []);
 
   useEffect(() => {
     const layoutNodes =

@@ -1,4 +1,4 @@
-import { getAllHorses } from "@/lib/horses";
+import { getRecentHorses } from "@/lib/horses";
 import Sidebar from "./Sidebar";
 import * as styles from "./Sidebar.css";
 
@@ -7,11 +7,11 @@ export default async function AppWrapper({
 }: {
   children: React.ReactNode;
 }) {
-  const horses = await getAllHorses();
+  const fallbackHorses = await getRecentHorses(5);
 
   return (
     <div style={{ display: "flex" }}>
-      <Sidebar horses={horses} />
+      <Sidebar fallbackHorses={fallbackHorses} />
       <main className={styles.contentArea}>{children}</main>
     </div>
   );

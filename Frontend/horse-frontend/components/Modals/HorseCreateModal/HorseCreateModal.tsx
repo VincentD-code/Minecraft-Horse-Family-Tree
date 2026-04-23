@@ -3,14 +3,14 @@ import * as modalStyles from "../Modals.css";
 import * as styles from "./HorseCreateModal.css";
 import CreateHorseForm from "./CreateHorseForm/CreateHorseForm";
 import { Horse } from "@/types/horse";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import createHorseAction from "@/actions/createHorseAction";
+import getAllHorsesAction from "@/actions/getAllHorsesAction";
 import { useRouter } from "next/navigation";
 
 interface HorseCreateModalProps {
   isOpen: boolean;
   setIsOpen: (val: boolean) => void;
-  horses: Horse[];
 }
 
 export interface createHorseData {
@@ -27,9 +27,9 @@ export interface createHorseData {
 export default function HorseCreateModalProps({
   isOpen,
   setIsOpen,
-  horses,
 }: HorseCreateModalProps) {
   const router = useRouter();
+  const [horses, setHorses] = useState<Horse[]>([]);
   const [formData, setFormData] = useState<createHorseData>({
     name: "Name",
     parentId1: "",
@@ -41,6 +41,17 @@ export default function HorseCreateModalProps({
     variant: 1,
   });
   const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchHorses = async () => {
+        const data = await getAllHorsesAction();
+        setHorses(data);
+      };
+      fetchHorses();
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const onClose = () => {

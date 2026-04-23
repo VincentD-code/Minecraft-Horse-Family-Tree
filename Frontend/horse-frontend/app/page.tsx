@@ -1,4 +1,4 @@
-import { getAllHorses } from "@/lib/horses";
+import { getRecentHorses, getStablesStats } from "@/lib/horses";
 import * as styles from "./Dashboard.css";
 import { translateStat } from "@/utils/translateRawStats";
 import { getHorseVariantImage } from "@/utils/variant";
@@ -6,18 +6,12 @@ import Link from "next/link";
 import Image from "next/image";
 
 export default async function DashboardPage() {
-  const horses = await getAllHorses();
+  const [horses, stats] = await Promise.all([
+    getRecentHorses(10),
+    getStablesStats(),
+  ]);
 
-  const totalHorses = horses.length;
-  const aliveHorses = horses.filter((h) => h.status !== 0).length;
-  
-  const avgSpeed = horses.length > 0 
-    ? (horses.reduce((acc, h) => acc + translateStat("speed", h.speed), 0) / totalHorses).toFixed(2)
-    : 0;
-    
-  const avgJump = horses.length > 0
-    ? (horses.reduce((acc, h) => acc + translateStat("jump", h.jump), 0) / totalHorses).toFixed(2)
-    : 0;
+  const { total, alive, avgSpeed, avgJump } = stats;
 
   return (
     <div className={styles.container}>
@@ -29,19 +23,19 @@ export default async function DashboardPage() {
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Total Horses</span>
-          <span className={styles.statValue}>{totalHorses}</span>
+          <span className={styles.statValue}>{total}</span>
         </div>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Alive</span>
-          <span className={styles.statValue}>{aliveHorses}</span>
+          <span className={styles.statValue}>{alive}</span>
         </div>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Avg. Speed</span>
-          <span className={styles.statValue}>{avgSpeed} m/s</span>
+          <span className={styles.statValue}>{translateStat("speed", avgSpeed).toFixed(2)} m/s</span>
         </div>
         <div className={styles.statCard}>
           <span className={styles.statLabel}>Avg. Jump</span>
-          <span className={styles.statValue}>{avgJump} blocks</span>
+          <span className={styles.statValue}>{translateStat("jump", avgJump).toFixed(2)} blocks</span>
         </div>
       </div>
 
