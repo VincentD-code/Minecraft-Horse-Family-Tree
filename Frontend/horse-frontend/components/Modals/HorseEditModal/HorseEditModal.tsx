@@ -96,7 +96,7 @@ export default function HorseEditModal({
     <div className={modalStyles.overlay}>
       <div className={modalStyles.modal}>
         <h2>Edit Horse</h2>
-        <div className={styles.container} style={{ margin: 0, padding: 0 }}>
+        <div className={createFormStyles.container} style={{ margin: 0, padding: 0 }}>
           <div className={createFormStyles.nameRow}>
             <label className={createFormStyles.label}>Name</label>
             <input
