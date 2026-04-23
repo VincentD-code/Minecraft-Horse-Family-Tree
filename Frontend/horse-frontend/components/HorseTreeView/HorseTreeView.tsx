@@ -59,8 +59,8 @@ function TreeContent({
   useEffect(() => {
     const layoutNodes =
       view === "base"
-        ? getBaseLayout(initialNodes, initialEdges)
-        : getSortLayout(initialNodes, view);
+        ? getBaseLayout(initialNodes, initialEdges, compactView)
+        : getSortLayout(initialNodes, view, compactView);
 
     // Update nodes with statusView and compactView data
     const newNodes = layoutNodes.map(node => ({

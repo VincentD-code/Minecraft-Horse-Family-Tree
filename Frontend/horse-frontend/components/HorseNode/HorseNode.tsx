@@ -50,17 +50,19 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
   const useShade = statusView && isDead;
 
   // Calculate a darker version of the dnaColor for the background when dead
-  const backgroundColor = useShade ? darkenColor(dnaColor, 0.7) : (compactView ? dnaColor : '#ffffff');
-  const borderColor = dnaColor;
-  const textColor = (useShade || compactView) ? getContrastColor(backgroundColor) : '#1f2937';
+  // Restore the "color things" by using dnaColor as background even in modern view
+  const backgroundColor = useShade ? darkenColor(dnaColor, 0.7) : dnaColor;
+  const borderColor = useShade ? dnaColor : darkenColor(dnaColor, 0.2);
+  const textColor = getContrastColor(backgroundColor);
 
   const containerStyle: CSSProperties = {
     backgroundColor: backgroundColor,
     borderColor: borderColor,
-    borderLeftWidth: compactView ? '2px' : '6px',
-    borderLeftStyle: 'solid',
     borderStyle: 'solid',
-    borderWidth: compactView ? '2px' : undefined,
+    borderTopWidth: '2px',
+    borderRightWidth: '2px',
+    borderBottomWidth: '2px',
+    borderLeftWidth: compactView ? '2px' : '6px',
   };
 
   const getDisplayStat = () => {
@@ -105,7 +107,7 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
       />
 
       <div className={styles.contentWrapper}>
-        <div className={styles.imageContainer}>
+        <div className={styles.imageContainer} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
           <Image 
             src={horseImage} 
             alt={horse.name} 
@@ -118,9 +120,9 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
           <div className={styles.horseName} style={{ color: textColor }}>
             {horse.name}
           </div>
-          <div className={styles.statText}>
-            <span className={styles.statLabel}>{display.label}:</span>
-            <span className={styles.statValue}>{display.value}</span>
+          <div className={styles.statText} style={{ color: textColor, opacity: 0.8 }}>
+            <span className={styles.statLabel} style={{ color: 'inherit' }}>{display.label}:</span>
+            <span className={styles.statValue} style={{ color: 'inherit' }}>{display.value}</span>
           </div>
         </div>
       </div>
