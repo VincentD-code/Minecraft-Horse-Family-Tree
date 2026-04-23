@@ -1,34 +1,32 @@
 import { style } from "@vanilla-extract/css";
+import { vars } from "@/styles/theme.css";
 
 export const container = style({
   display: "flex",
   flexDirection: "column",
-  margin: 10,
-  padding: 10,
-  borderRadius: 8,
-  gap: "10px"
+  gap: vars.spacing.md,
 });
 
 export const field = style({
-  maxHeight: 40,
-  maxWidth: 300,
+  width: "100%",
 });
 
 export const fields = style({
   display: "flex",
   flexDirection: "column",
-  gap: "8px",
+  gap: vars.spacing.md,
 });
 
 export const nameField = style({
   width: "120px",
-  padding: "8px",
-  borderRadius: "4px",
-  border: "1px solid #e5e7eb",
-  fontSize: "13px",
+  padding: vars.spacing.sm,
+  borderRadius: vars.borderRadius.sm,
+  border: `1px solid ${vars.color.border}`,
+  fontSize: vars.fontSize.sm,
+  fontFamily: vars.font.main,
   ":focus": {
     outline: "none",
-    borderColor: "#2d4a3e",
+    borderColor: vars.color.primary,
   },
 });
 
@@ -38,13 +36,13 @@ export const nameRow = style({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  margin: "8px 0",
+  margin: `${vars.spacing.xs} 0`,
 });
 
 export const label = style({
   textTransform: "uppercase",
   letterSpacing: "0.1em",
-  fontSize: "11px",
-  fontWeight: 800,
-  color: "#2d4a3e",
+  fontSize: vars.fontSize.xs,
+  fontWeight: vars.fontWeight.extrabold,
+  color: vars.color.primary,
 });

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Select from "react-select";
 import * as modalStyles from "../Modals.css";
 import * as styles from "./HorseEditModal.css";
+import * as createFormStyles from "../HorseCreateModal/CreateHorseForm/CreateHorseForm.css";
 import Button from "@/components/Common/Button/Button";
 import Switch from "@/components/Common/Switch/Switch";
 import { translateStat, untranslateStat } from "@/utils/translateRawStats";
@@ -38,14 +39,11 @@ export default function HorseEditModal({
 
   useEffect(() => {
     setDisplayStats({
-      speed: translateStat("speed", formData.speed).toString(),
-      health: translateStat("health", formData.health).toString(),
-      jump:
-        translateStat("jump", formData.jump) < 0
-          ? "0"
-          : translateStat("jump", formData.jump).toString(),
+      speed: (rawStatsView ? formData.speed : translateStat("speed", formData.speed)).toString(),
+      health: (rawStatsView ? formData.health : translateStat("health", formData.health)).toString(),
+      jump: (rawStatsView ? formData.jump : translateStat("jump", formData.jump)).toString(),
     });
-  }, [formData.speed, formData.health, formData.jump]);
+  }, [formData.speed, formData.health, formData.jump, rawStatsView]);
 
   const handleTextChange = (field: string, textValue: string) => {
     setDisplayStats((prev) => ({ ...prev, [field]: textValue }));
@@ -54,7 +52,7 @@ export default function HorseEditModal({
     if (!isNaN(numericValue)) {
       setFormData((prev) => ({
         ...prev,
-        [field]: untranslateStat(field, numericValue),
+        [field]: rawStatsView ? numericValue : untranslateStat(field, numericValue),
       }));
     }
   };
@@ -97,80 +95,101 @@ export default function HorseEditModal({
   return (
     <div className={modalStyles.overlay}>
       <div className={modalStyles.modal}>
-        {/* //allow for changing horse name as well, key by _id */}
-        <h2>Edit {horse.name}</h2>
-        {parentOptions.length > 1 && (
-          <>
-            <label className={statRowStyles.label}>Parent 1</label>
-            <Select
-              options={parentOptions}
-              isClearable={false}
-              defaultValue={parentOptions.find(
-                (opt) => opt.value === horse.parentId1,
-              )}
-              onChange={(selected) => {
-                if (selected) {
-                  handleChange("parentId1", selected.value);
-                }
-              }}
-              menuPortalTarget={null}
+        <h2>Edit Horse</h2>
+        <div className={styles.container} style={{ margin: 0, padding: 0 }}>
+          <div className={createFormStyles.nameRow}>
+            <label className={createFormStyles.label}>Name</label>
+            <input
+              value={formData.name}
+              onChange={(e) => handleChange("name", e.target.value)}
+              placeholder="Name"
+              className={createFormStyles.nameField}
             />
-            <label className={statRowStyles.label}>Parent 2</label>
-            <Select
-              options={parentOptions}
-              defaultValue={parentOptions.find(
-                (opt) => opt.value === horse.parentId2,
-              )}
-              onChange={(selected) => {
-                if (selected) {
-                  handleChange("parentId2", selected.value);
-                }
-              }}
-              menuPortalTarget={null}
-            />
-            </>
+          </div>
+
+          {rawStatsView && <StatsBox onStatsParsed={handleImportedStats} />}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {parentOptions.length > 1 && (
+              <>
+                <label className={statRowStyles.label}>Parent 1</label>
+                <Select
+                  options={parentOptions}
+                  isClearable={false}
+                  defaultValue={parentOptions.find(
+                    (opt) => opt.value === horse.parentId1,
+                  )}
+                  onChange={(selected) => {
+                    if (selected) {
+                      handleChange("parentId1", selected.value);
+                    }
+                  }}
+                  menuPortalTarget={null}
+                />
+                <label className={statRowStyles.label}>Parent 2</label>
+                <Select
+                  options={parentOptions}
+                  defaultValue={parentOptions.find(
+                    (opt) => opt.value === horse.parentId2,
+                  )}
+                  onChange={(selected) => {
+                    if (selected) {
+                      handleChange("parentId2", selected.value);
+                    }
+                  }}
+                  menuPortalTarget={null}
+                />
+              </>
             )}
             <label className={statRowStyles.label}>Status</label>
             <Select
-            options={statusOptions}
-            defaultValue={statusOptions.find(
-            (opt) => opt.label === (horse.status === 0 ? "Dead" : "Alive"),
-            )}
-            onChange={(selected) => {
-            if (selected) {
-              handleChange("status", selected.value);
-            }
-            }}
-            menuPortalTarget={null}
+              options={statusOptions}
+              defaultValue={statusOptions.find(
+                (opt) => opt.label === (horse.status === 0 ? "Dead" : "Alive"),
+              )}
+              onChange={(selected) => {
+                if (selected) {
+                  handleChange("status", selected.value);
+                }
+              }}
+              menuPortalTarget={null}
             />
+          </div>
 
+          <div style={{ marginTop: '16px' }}>
+            <Switch
+              label={rawStatsView ? "Raw Stats" : "Processed Stats"}
+              checked={!rawStatsView}
+              onChange={(checked) => setRawStatsView(!checked)}
+              labelLeft={false}
+            />
+          </div>
 
-        <StatsBox onStatsParsed={handleImportedStats} />
-
-        <VariantSelector 
-          selectedVariant={formData.variant} 
-          onChange={(v) => handleChange("variant", v)} 
-        />
-
-        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <StatRow
-            text="Speed"
-            fieldName="speed"
-            displayStats={displayStats}
-            handleTextChange={handleTextChange}
+          <VariantSelector 
+            selectedVariant={formData.variant} 
+            onChange={(v) => handleChange("variant", v)} 
           />
-          <StatRow
-            text="Health"
-            fieldName="health"
-            displayStats={displayStats}
-            handleTextChange={handleTextChange}
-          />
-          <StatRow
-            text="Jump"
-            fieldName="jump"
-            displayStats={displayStats}
-            handleTextChange={handleTextChange}
-          />
+
+          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <StatRow
+              text="Speed"
+              fieldName="speed"
+              displayStats={displayStats}
+              handleTextChange={handleTextChange}
+            />
+            <StatRow
+              text="Health"
+              fieldName="health"
+              displayStats={displayStats}
+              handleTextChange={handleTextChange}
+            />
+            <StatRow
+              text="Jump"
+              fieldName="jump"
+              displayStats={displayStats}
+              handleTextChange={handleTextChange}
+            />
+          </div>
         </div>
         <div className={styles.buttonRow}>
           <Button onClick={onCancel} text="Cancel" />

@@ -23,6 +23,12 @@ export default function CreateHorseForm({
   formData,
   setFormData,
 }: CreateHorseFormProps) {
+  const [statsView, setStatsView] = useState(false);
+  const [displayStats, setDisplayStats] = useState({
+    speed: translateStat("speed", formData.speed).toString(),
+    health: translateStat("health", formData.health).toString(),
+    jump: translateStat("jump", formData.jump).toString(),
+  });
 
   const handleSelectChange = (
     field: keyof createHorseData,
@@ -34,11 +40,23 @@ export default function CreateHorseForm({
     }));
   };
 
-  const [displayStats, setDisplayStats] = useState({
-    speed: translateStat("speed", formData.speed).toString(),
-    health: translateStat("health", formData.health).toString(),
-    jump: translateStat("jump", formData.jump).toString(),
-  });
+  const handleImportedStats = (newStats: HorseStats) => {
+    setFormData((prev) => ({
+      ...prev,
+      speed: newStats.speed,
+      health: newStats.health,
+      jump: newStats.jump,
+      variant: newStats.variant,
+    }));
+  };
+
+  useEffect(() => {
+    setDisplayStats({
+      speed: (statsView ? formData.speed : translateStat("speed", formData.speed)).toString(),
+      health: (statsView ? formData.health : translateStat("health", formData.health)).toString(),
+      jump: (statsView ? formData.jump : translateStat("jump", formData.jump)).toString(),
+    });
+  }, [formData.speed, formData.health, formData.jump, statsView]);
 
   const handleTextChange = (
     field: string,
@@ -50,33 +68,9 @@ export default function CreateHorseForm({
     if (!isNaN(numericValue)) {
       setFormData((prev) => ({
         ...prev,
-        [field]: untranslateStat(field, numericValue),
+        [field]: statsView ? numericValue : untranslateStat(field, numericValue),
       }));
     }
-  };
-
-  useEffect(() => {
-    setDisplayStats({
-      speed: translateStat("speed", formData.speed).toString(),
-      health: translateStat("health", formData.health).toString(),
-      jump: translateStat("jump", formData.jump).toString(),
-    });
-  }, [formData.speed, formData.health, formData.jump]);
-
-  const [statsView, setStatsView] = useState(false);
-
-  const handleViewChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setStatsView(!event.target.checked);
-  };
-
-  const handleImportedStats = (newStats: HorseStats) => {
-    setFormData((prev) => ({
-      ...prev,
-      speed: newStats.speed,
-      health: newStats.health,
-      jump: newStats.jump,
-      variant: newStats.variant,
-    }));
   };
 
   const parentOptions = horses.map((horse) => ({
@@ -102,7 +96,7 @@ export default function CreateHorseForm({
             />
           </div>
 
-          <StatsBox onStatsParsed={handleImportedStats} />
+          {statsView && <StatsBox onStatsParsed={handleImportedStats} />}
 
           {parentOptions.length > 1 && (
             <>
@@ -138,6 +132,15 @@ export default function CreateHorseForm({
             selectedVariant={formData.variant} 
             onChange={(v) => handleSelectChange("variant", v)} 
           />
+
+          <div style={{ marginTop: '16px' }}>
+            <Switch
+              label={statsView ? "Raw Stats" : "Processed Stats"}
+              checked={!statsView}
+              onChange={(checked) => setStatsView(!checked)}
+              labelLeft={false}
+            />
+          </div>
 
           <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <StatRow

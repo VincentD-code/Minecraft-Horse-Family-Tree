@@ -44,8 +44,8 @@ export const textDetails = style({
 });
 
 export const horseName = style({
-  fontSize: "14px",
-  fontWeight: 800,
+  fontSize: vars.fontSize.md,
+  fontWeight: vars.fontWeight.extrabold,
   color: vars.color.textMain,
   whiteSpace: "nowrap",
 });
@@ -54,6 +54,7 @@ export const statText = style({
   display: "flex",
   alignItems: "center",
   gap: "4px",
+  fontSize: vars.fontSize.xs,
 });
 
 export const statLabel = style({
