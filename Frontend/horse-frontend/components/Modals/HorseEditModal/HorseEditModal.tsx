@@ -9,6 +9,7 @@ import { translateStat, untranslateStat } from "@/utils/translateRawStats";
 import { HorseStats } from "@/utils/parseHorseStats";
 import StatsBox from "@/components/Common/StatsBox/StatsBox";
 import StatRow from "../StatRow/StatRow";
+import VariantSelector from "@/components/Common/VariantSelector/VariantSelector";
 
 import * as statRowStyles from "../StatRow/StatRow.css";
 
@@ -139,12 +140,20 @@ export default function HorseEditModal({
             }
           }}
         />
-        <Switch
-          label={rawStatsView ? "Raw Stats" : "Processed Stats"}
-          checked={!rawStatsView}
-          onChange={(checked) => setRawStatsView(!checked)}
-          labelLeft={false}
+
+        <VariantSelector 
+          selectedVariant={formData.variant} 
+          onChange={(v) => handleChange("variant", v)} 
         />
+
+        <div style={{ marginTop: '16px' }}>
+          <Switch
+            label={rawStatsView ? "Raw Stats" : "Processed Stats"}
+            checked={!rawStatsView}
+            onChange={(checked) => setRawStatsView(!checked)}
+            labelLeft={false}
+          />
+        </div>
         {rawStatsView ? (
           <StatsBox onStatsParsed={handleImportedStats} />
         ) : (

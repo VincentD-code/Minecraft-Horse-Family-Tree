@@ -1,8 +1,10 @@
 import { Handle, Position, NodeProps, Node } from '@xyflow/react';
 import { Horse } from '@/types/horse';
 import { translateStatsForDisplay } from '@/utils/translateRawStats';
+import { getHorseVariantImage } from '@/utils/variant';
 import * as styles from './HorseNode.css';
 import { CSSProperties } from 'react';
+import Image from 'next/image';
 
 export type HorseNodeData = {
   horse: Horse;
@@ -47,31 +49,32 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
   const useShade = statusView && isDead;
 
   // Calculate a darker version of the dnaColor for the background when dead
-  const backgroundColor = useShade ? darkenColor(dnaColor, 0.7) : dnaColor;
-  const textColor = getContrastColor(backgroundColor);
+  const backgroundColor = useShade ? darkenColor(dnaColor, 0.7) : '#ffffff';
+  const borderColor = dnaColor;
+  const textColor = useShade ? getContrastColor(backgroundColor) : '#1f2937';
 
   const containerStyle: CSSProperties = {
     backgroundColor: backgroundColor,
-    borderColor: dnaColor,
-    borderStyle: 'solid',
-    borderWidth: '2px',
+    borderColor: borderColor,
+    borderLeftWidth: '6px',
+    borderLeftStyle: 'solid',
   };
 
-// Determine what label and value to show
   const getDisplayStat = () => {
     switch (activeView) {
       case 'jump':
-        return { label: 'Jump', value: `${processedStats.jump?.toFixed(2)} [blocks]` };
+        return { label: 'Jump', value: `${processedStats.jump?.toFixed(2)}` };
       case 'health':
-        return { label: 'Health', value: `${processedStats.health?.toFixed(2)} [HP]` };
+        return { label: 'HP', value: `${processedStats.health?.toFixed(2)}` };
       case 'speed':
       case 'base':
       default:
-        return { label: 'Speed', value: `${processedStats.speed?.toFixed(2)} [b/s]` };
+        return { label: 'Speed', value: `${processedStats.speed?.toFixed(2)}` };
     }
   };
 
   const display = getDisplayStat();
+  const horseImage = getHorseVariantImage(horse.variant);
 
   return (
     <div className={styles.nodeContainer} style={containerStyle}>
@@ -82,12 +85,23 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
       />
       
       <div className={styles.contentWrapper}>
-        {/* 3. Contrast applied directly to text elements */}
-        <div className={styles.horseName} style={{ color: textColor }}>
-          {horse.name}
+        <div className={styles.imageContainer}>
+          <Image 
+            src={horseImage} 
+            alt={horse.name} 
+            width={48} 
+            height={48} 
+            className={styles.horseImage}
+          />
         </div>
-        <div className={styles.statText} style={{ color: textColor }}>
-          {display.label}: {display.value}
+        <div className={styles.textDetails}>
+          <div className={styles.horseName} style={{ color: textColor }}>
+            {horse.name}
+          </div>
+          <div className={styles.statText}>
+            <span className={styles.statLabel}>{display.label}:</span>
+            <span className={styles.statValue}>{display.value}</span>
+          </div>
         </div>
       </div>
       

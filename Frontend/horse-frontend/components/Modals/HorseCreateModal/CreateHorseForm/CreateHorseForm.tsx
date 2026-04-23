@@ -9,6 +9,7 @@ import Switch from "@/components/Common/Switch/Switch";
 import { translateStat, untranslateStat } from "@/utils/translateRawStats";
 import StatRow from "../../StatRow/StatRow";
 import { createHorseData } from "../HorseCreateModal";
+import VariantSelector from "@/components/Common/VariantSelector/VariantSelector";
 
 export interface CreateHorseFormProps {
   horses: Horse[];
@@ -128,17 +129,24 @@ export default function CreateHorseForm({
             className={styles.field}
           />
 
-          <Switch
-            label={statsView ? "Raw Stats" : "Processed Stats"}
-            checked={!statsView}
-            onChange={(checked) => setStatsView(!checked)}
-            labelLeft={false}
+          <VariantSelector 
+            selectedVariant={formData.variant} 
+            onChange={(v) => handleSelectChange("variant", v)} 
           />
+
+          <div style={{ marginTop: '16px' }}>
+            <Switch
+              label={statsView ? "Raw Stats" : "Processed Stats"}
+              checked={!statsView}
+              onChange={(checked) => setStatsView(!checked)}
+              labelLeft={false}
+            />
+          </div>
 
           {statsView ? (
             <StatsBox onStatsParsed={handleImportedStats} />
           ) : (
-            <>
+            <div style={{ marginTop: '8px' }}>
               <StatRow
                 text="Speed"
                 fieldName="speed"
@@ -157,7 +165,7 @@ export default function CreateHorseForm({
                 displayStats={displayStats}
                 handleTextChange={handleTextChange}
               />
-            </>
+            </div>
           )}
         </div>
       </form>

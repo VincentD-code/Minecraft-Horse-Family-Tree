@@ -9,38 +9,63 @@ interface StatsBoxProps {
 export default function StatsBox({ onStatsParsed }: StatsBoxProps){
     const [localStats, setLocalStats] = useState<HorseStats | null>(null);
     const [error, setError] = useState(false);
+    
     const handleStatsPaste = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const parsed = parseHorseStats(e.target.value);
+        const val = e.target.value;
+        if (!val) {
+          setLocalStats(null);
+          setError(false);
+          return;
+        }
+
+        const parsed = parseHorseStats(val);
 
         if (parsed) {
             setLocalStats(parsed);
             onStatsParsed(parsed);
             setError(false);
         } else {
-            setError(e.target.value.length > 0);
+            setError(true);
+            setLocalStats(null);
         }
-      };
+    };
       
     return(
-        <>
+        <div className={styles.container}>
+            <label className={styles.label}>Paste /summon command</label>
             <textarea
-              placeholder="Paste /summon stats here..."
+              placeholder="Paste horse NBT or /summon command..."
               onChange={handleStatsPaste}
               rows={4}
               className={styles.textArea}
             />
+            
             {error && (
-              <p>Could not parse stats — is this a valid /summon command?</p>
+              <p className={styles.errorText}>
+                ⚠️ Could not parse stats. Make sure it's a valid Minecraft command.
+              </p>
             )}
 
             {localStats && (
-              <ul>
-                <li>Speed: {localStats.speed}</li>
-                <li>Health: {localStats.health}</li>
-                <li>Jump: {localStats.jump}</li>
-                <li>Variant: {localStats.variant}</li>
-              </ul>
+              <div className={styles.parsedStats}>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Speed</span>
+                  <span className={styles.statValue}>{localStats.speed.toFixed(6)}</span>
+                </div>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Health</span>
+                  <span className={styles.statValue}>{localStats.health.toFixed(1)}</span>
+                </div>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Jump</span>
+                  <span className={styles.statValue}>{localStats.jump.toFixed(6)}</span>
+                </div>
+                <div className={styles.statItem}>
+                  <span className={styles.statLabel}>Variant ID</span>
+                  <span className={styles.statValue}>{localStats.variant}</span>
+                </div>
+              </div>
             )}
-          </>
+        </div>
     )
 }

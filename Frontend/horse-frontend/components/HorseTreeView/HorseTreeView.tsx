@@ -7,6 +7,10 @@ import {
   Edge,
   OnNodesChange,
   OnEdgesChange,
+  MiniMap,
+  Controls,
+  Background,
+  BackgroundVariant,
 } from "@xyflow/react";
 import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -15,8 +19,6 @@ import { getBaseLayout, getSortLayout } from "@/utils/layout";
 import "@xyflow/react/dist/style.css";
 import CustomHorseNode, { HorseNode } from "../HorseNode/HorseNode";
 import * as styles from "./HorseTreeView.css";
-import Button from "../Common/Button/Button";
-import HorseCreateModal from "../Modals/HorseCreateModal/HorseCreateModal";
 import { Horse } from "@/types/horse";
 import ViewMenu from "./ViewMenu/ViewMenu";
 
@@ -35,7 +37,6 @@ function TreeContent({
   horses,
 }: HorseTreeViewProps) {
   const router = useRouter();
-  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const [view, setView] = useState<ViewMode>(() => {
     const savedView = getCookie("horse-tree-view") as ViewMode;
@@ -90,13 +91,6 @@ function TreeContent({
         setStatusView={setStatusView} 
       />
 
-      <Button onClick={() => setCreateModalOpen(true)} text="Add Horse" className={styles.addHorseButton} />
-      <HorseCreateModal
-        isOpen={createModalOpen}
-        setIsOpen={setCreateModalOpen}
-        horses={horses}
-      />
-
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -105,9 +99,19 @@ function TreeContent({
         nodeTypes={nodeTypes}
         onNodeClick={(_event, node) => router.push(`/horses/${node.id}`)}
         fitView
-        minZoom={0.1}
+        minZoom={0.05}
         maxZoom={2.0}
-      />
+      >
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+        <Controls showInteractive={false} />
+        <MiniMap 
+          nodeStrokeWidth={3} 
+          zoomable 
+          pannable 
+          maskColor="rgba(0, 0, 0, 0.1)"
+          style={{ height: 120, width: 200 }}
+        />
+      </ReactFlow>
     </div>
   );
 }
