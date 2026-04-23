@@ -54,7 +54,18 @@ export default function HorseCreateModalProps({
         return;
       }
 
-      await createHorseAction(formData);
+      const newHorse = await createHorseAction(formData);
+      
+      // Update local storage for recent activity
+      if (newHorse && typeof window !== "undefined") {
+        const stored = localStorage.getItem("recently-viewed-horses");
+        let viewed: string[] = stored ? JSON.parse(stored) : [];
+        viewed = viewed.filter(id => id !== newHorse.id);
+        viewed.unshift(newHorse.id);
+        localStorage.setItem("recently-viewed-horses", JSON.stringify(viewed.slice(0, 10)));
+        window.dispatchEvent(new Event("storage"));
+      }
+
       setIsOpen(false);
       router.refresh();
       router.push("/horses");

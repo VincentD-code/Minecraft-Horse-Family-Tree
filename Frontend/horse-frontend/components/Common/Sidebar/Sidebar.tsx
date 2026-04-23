@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import * as styles from "./Sidebar.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HorseCreateModal from "@/components/Modals/HorseCreateModal/HorseCreateModal";
 import { Horse } from "@/types/horse";
 import Image from "next/image";
@@ -16,13 +16,32 @@ interface SidebarProps {
 export default function Sidebar({ horses }: SidebarProps) {
   const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [recentViewed, setRecentViewed] = useState<Horse[]>([]);
+
+  useEffect(() => {
+    const updateRecent = () => {
+      const stored = localStorage.getItem("recently-viewed-horses");
+      if (stored) {
+        const ids: string[] = JSON.parse(stored);
+        const viewedHorses = ids
+          .map(id => horses.find(h => h.id === id))
+          .filter((h): h is Horse => !!h);
+        setRecentViewed(viewedHorses.slice(0, 5));
+      } else {
+        // Fallback to most recently created
+        setRecentViewed([...horses].slice(-5).reverse());
+      }
+    };
+
+    updateRecent();
+    window.addEventListener("storage", updateRecent);
+    return () => window.removeEventListener("storage", updateRecent);
+  }, [horses]);
 
   const navItems = [
     { label: "Dashboard", href: "/", icon: "📊" },
     { label: "Lineage Tree", href: "/horses", icon: "🌳" },
   ];
-
-  const recentHorses = [...horses].slice(-5).reverse();
 
   return (
     <>
@@ -51,7 +70,7 @@ export default function Sidebar({ horses }: SidebarProps) {
           <div className={styles.navSection}>
             <span className={styles.sectionLabel}>Recent Activity</span>
             <div className={styles.recentList}>
-              {recentHorses.map((horse) => (
+              {recentViewed.map((horse) => (
                 <Link 
                   key={horse.id} 
                   href={`/horses/${horse.id}`} 
@@ -68,6 +87,11 @@ export default function Sidebar({ horses }: SidebarProps) {
                   <span className={styles.recentName}>{horse.name}</span>
                 </Link>
               ))}
+              {recentViewed.length === 0 && (
+                <div className={styles.recentItem} style={{ opacity: 0.5, pointerEvents: 'none' }}>
+                  No recent activity
+                </div>
+              )}
             </div>
           </div>
         </nav>
