@@ -11,6 +11,7 @@ export const vars = createGlobalTheme(":root", {
     textMuted: "#6b7280",
     border: "#e5e7eb",
     background: "#fdfbf7",
+    backgroundDark: "#1a2c25", // Dark Forest Green
     white: "#ffffff",
     accent: "#d4a373",        // Sandy/Wood accent
   },

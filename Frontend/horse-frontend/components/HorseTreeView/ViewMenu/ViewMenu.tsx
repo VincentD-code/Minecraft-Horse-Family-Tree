@@ -11,9 +11,18 @@ interface ViewMenuProps {
   view: ViewMode;
   statusView: boolean;
   setStatusView: Dispatch<SetStateAction<boolean>>;
+  compactView: boolean;
+  setCompactView: Dispatch<SetStateAction<boolean>>;
 }
 
-export default function ViewMenu({ setView, view, statusView, setStatusView }: ViewMenuProps) {
+export default function ViewMenu({ 
+  setView, 
+  view, 
+  statusView, 
+  setStatusView,
+  compactView,
+  setCompactView
+}: ViewMenuProps) {
   const { fitView } = useReactFlow();
   const [isOpen, setIsOpen] = useState(true);
 
@@ -27,6 +36,11 @@ export default function ViewMenu({ setView, view, statusView, setStatusView }: V
   const handleStatusToggle = (checked: boolean) => {
     setStatusView(checked);
     setCookie("horse-status-view", checked ? "true" : "false", { maxAge: 60 * 60 * 24 * 30 });
+  };
+
+  const handleCompactToggle = (checked: boolean) => {
+    setCompactView(checked);
+    setCookie("horse-compact-view", checked ? "true" : "false", { maxAge: 60 * 60 * 24 * 30 });
   };
 
   return (
@@ -60,11 +74,18 @@ export default function ViewMenu({ setView, view, statusView, setStatusView }: V
       <p className={styles.menuLabel} style={{ marginTop: "16px" }}>
         View Filters
       </p>
-      <Switch 
-        label="Dead/Alive Highlight" 
-        checked={statusView} 
-        onChange={handleStatusToggle} 
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <Switch 
+          label="Classic Node Style" 
+          checked={compactView} 
+          onChange={handleCompactToggle} 
+        />
+        <Switch 
+          label="Dead/Alive Highlight" 
+          checked={statusView} 
+          onChange={handleStatusToggle} 
+        />
+      </div>
 
       <p className={styles.menuLabel} style={{ marginTop: "8px" }}>
         Rank by Stat (Left to Right)

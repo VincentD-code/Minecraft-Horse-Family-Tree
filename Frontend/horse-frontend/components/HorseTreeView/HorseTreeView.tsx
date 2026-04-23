@@ -48,6 +48,11 @@ function TreeContent({
     return saved === "true";
   });
 
+  const [compactView, setCompactView] = useState<boolean>(() => {
+    const saved = getCookie("horse-compact-view");
+    return saved === "true";
+  });
+
   const [nodes, setNodes] = useState<HorseNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
 
@@ -57,19 +62,20 @@ function TreeContent({
         ? getBaseLayout(initialNodes, initialEdges)
         : getSortLayout(initialNodes, view);
 
-    // Update nodes with statusView data
+    // Update nodes with statusView and compactView data
     const newNodes = layoutNodes.map(node => ({
       ...node,
       data: {
         ...node.data,
         activeView: view,
-        statusView: statusView
+        statusView: statusView,
+        compactView: compactView
       }
     }));
 
     setNodes(newNodes);
     setEdges(initialEdges);
-  }, [view, statusView, initialNodes, initialEdges]);
+  }, [view, statusView, compactView, initialNodes, initialEdges]);
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
@@ -89,6 +95,8 @@ function TreeContent({
         view={view} 
         statusView={statusView} 
         setStatusView={setStatusView} 
+        compactView={compactView}
+        setCompactView={setCompactView}
       />
 
       <ReactFlow

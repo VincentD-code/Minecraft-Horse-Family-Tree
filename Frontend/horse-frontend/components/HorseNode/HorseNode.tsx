@@ -11,6 +11,7 @@ export type HorseNodeData = {
   label?: string;
   activeView?: 'speed' | 'jump' | 'health' | 'base';
   statusView?: boolean;
+  compactView?: boolean;
 };
 
 // 2. Define the specialized Node type for this component
@@ -40,24 +41,26 @@ function darkenColor(hex: string, amount: number): string {
 }
 
 export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
-  const { horse, activeView, statusView } = data;
+  const { horse, activeView, statusView, compactView } = data;
   const {jump, health, speed, variant} = horse;
   const processedStats = translateStatsForDisplay({jump, health, speed, variant})
   const dnaColor = horse.hexColor || '#444444';
-  
+
   const isDead = horse.status === 0;
   const useShade = statusView && isDead;
 
   // Calculate a darker version of the dnaColor for the background when dead
-  const backgroundColor = useShade ? darkenColor(dnaColor, 0.7) : '#ffffff';
+  const backgroundColor = useShade ? darkenColor(dnaColor, 0.7) : (compactView ? dnaColor : '#ffffff');
   const borderColor = dnaColor;
-  const textColor = useShade ? getContrastColor(backgroundColor) : '#1f2937';
+  const textColor = (useShade || compactView) ? getContrastColor(backgroundColor) : '#1f2937';
 
   const containerStyle: CSSProperties = {
     backgroundColor: backgroundColor,
     borderColor: borderColor,
-    borderLeftWidth: '6px',
+    borderLeftWidth: compactView ? '2px' : '6px',
     borderLeftStyle: 'solid',
+    borderStyle: 'solid',
+    borderWidth: compactView ? '2px' : undefined,
   };
 
   const getDisplayStat = () => {
@@ -76,6 +79,23 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
   const display = getDisplayStat();
   const horseImage = getHorseVariantImage(horse.variant);
 
+  if (compactView) {
+    return (
+      <div className={styles.nodeContainer} style={{ ...containerStyle, minWidth: '140px' }}>
+        <Handle type="target" position={Position.Top} className={styles.handleStyle} />
+        <div className={styles.contentWrapper} style={{ flexDirection: 'column', gap: '2px' }}>
+          <div className={styles.horseName} style={{ color: textColor, fontSize: '13px' }}>
+            {horse.name}
+          </div>
+          <div className={styles.statText} style={{ color: textColor, opacity: 0.9 }}>
+            {display.label}: {display.value}
+          </div>
+        </div>
+        <Handle type="source" position={Position.Bottom} className={styles.handleStyle} />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.nodeContainer} style={containerStyle}>
       <Handle 
@@ -83,7 +103,7 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
         position={Position.Top} 
         className={styles.handleStyle} 
       />
-      
+
       <div className={styles.contentWrapper}>
         <div className={styles.imageContainer}>
           <Image 
@@ -104,7 +124,7 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
           </div>
         </div>
       </div>
-      
+
       <Handle 
         type="source" 
         position={Position.Bottom} 
