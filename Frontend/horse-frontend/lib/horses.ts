@@ -186,11 +186,11 @@ export async function getHorsesByIds(ids: string[]): Promise<Horse[]> {
     const data = await horses.find({ _id: { $in: objectIds } }).toArray();
     
     // Map back in the order requested
-    const horseMap = new Map(data.map(row => [row._id.toString(), {
+    const horseMap = new Map<string, Horse>(data.map((row: WithId<Document>) => [row._id.toString(), {
       id: row._id.toString(),
       name: row.name || "Unknown",
-      parentId1: row.parentId1 || null,
-      parentId2: row.parentId2 || null,
+      parentId1: row.parentId1 || undefined,
+      parentId2: row.parentId2 || undefined,
       status: row.status,
       speed: parseFloat(row.speed) || 0,
       jump: parseFloat(row.jump) || 0,
