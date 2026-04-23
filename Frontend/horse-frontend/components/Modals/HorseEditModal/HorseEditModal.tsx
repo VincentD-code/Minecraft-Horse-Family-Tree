@@ -113,6 +113,7 @@ export default function HorseEditModal({
                   handleChange("parentId1", selected.value);
                 }
               }}
+              menuPortalTarget={null}
             />
             <label className={statRowStyles.label}>Parent 2</label>
             <Select
@@ -125,59 +126,52 @@ export default function HorseEditModal({
                   handleChange("parentId2", selected.value);
                 }
               }}
+              menuPortalTarget={null}
             />
-          </>
-        )}
-        <label className={statRowStyles.label}>Status</label>
-        <Select
-          options={statusOptions}
-          defaultValue={statusOptions.find(
+            </>
+            )}
+            <label className={statRowStyles.label}>Status</label>
+            <Select
+            options={statusOptions}
+            defaultValue={statusOptions.find(
             (opt) => opt.label === (horse.status === 0 ? "Dead" : "Alive"),
-          )}
-          onChange={(selected) => {
+            )}
+            onChange={(selected) => {
             if (selected) {
               handleChange("status", selected.value);
             }
-          }}
-        />
+            }}
+            menuPortalTarget={null}
+            />
+
+
+        <StatsBox onStatsParsed={handleImportedStats} />
 
         <VariantSelector 
           selectedVariant={formData.variant} 
           onChange={(v) => handleChange("variant", v)} 
         />
 
-        <div style={{ marginTop: '16px' }}>
-          <Switch
-            label={rawStatsView ? "Raw Stats" : "Processed Stats"}
-            checked={!rawStatsView}
-            onChange={(checked) => setRawStatsView(!checked)}
-            labelLeft={false}
+        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <StatRow
+            text="Speed"
+            fieldName="speed"
+            displayStats={displayStats}
+            handleTextChange={handleTextChange}
+          />
+          <StatRow
+            text="Health"
+            fieldName="health"
+            displayStats={displayStats}
+            handleTextChange={handleTextChange}
+          />
+          <StatRow
+            text="Jump"
+            fieldName="jump"
+            displayStats={displayStats}
+            handleTextChange={handleTextChange}
           />
         </div>
-        {rawStatsView ? (
-          <StatsBox onStatsParsed={handleImportedStats} />
-        ) : (
-          <>
-            <StatRow
-              text="Speed"
-              fieldName="speed"
-              displayStats={displayStats}
-              handleTextChange={handleTextChange}
-            />
-            <StatRow
-              text="Health"
-              fieldName="health"
-              displayStats={displayStats}
-              handleTextChange={handleTextChange}
-            />
-            <StatRow
-              text="Jump"
-              fieldName="jump"
-              displayStats={displayStats}
-              handleTextChange={handleTextChange}
-            />
-          </>
-        )}
         <div className={styles.buttonRow}>
           <Button onClick={onCancel} text="Cancel" />
           <Button onClick={() => onSave(formData)} text="Save Changes" />

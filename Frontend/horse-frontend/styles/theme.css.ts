@@ -36,5 +36,22 @@ export const vars = createGlobalTheme(":root", {
   font: {
     main: "var(--font-geist-sans), sans-serif",
     mono: "var(--font-geist-mono), monospace",
+  },
+  fontSize: {
+    xs: "11px",
+    sm: "13px",
+    md: "15px",
+    lg: "18px",
+    xl: "24px",
+    xxl: "32px",
+    display: "48px",
+  },
+  fontWeight: {
+    normal: "400",
+    medium: "500",
+    semibold: "600",
+    bold: "700",
+    extrabold: "800",
+    black: "900",
   }
 });

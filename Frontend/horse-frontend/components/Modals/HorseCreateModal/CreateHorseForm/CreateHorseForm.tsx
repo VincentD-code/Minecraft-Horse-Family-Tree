@@ -102,6 +102,8 @@ export default function CreateHorseForm({
             />
           </div>
 
+          <StatsBox onStatsParsed={handleImportedStats} />
+
           {parentOptions.length > 1 && (
             <>
               <Select
@@ -110,6 +112,7 @@ export default function CreateHorseForm({
                 value={parentOptions.find(o => o.value === formData.parentId1)}
                 onChange={(val) => handleSelectChange("parentId1", val?.value)}
                 className={styles.field}
+                menuPortalTarget={null}
               />
               <Select
                 options={parentOptions}
@@ -117,6 +120,7 @@ export default function CreateHorseForm({
                 value={parentOptions.find(o => o.value === formData.parentId2)}
                 onChange={(val) => handleSelectChange("parentId2", val?.value)}
                 className={styles.field}
+                menuPortalTarget={null}
               />
             </>
           )}
@@ -127,6 +131,7 @@ export default function CreateHorseForm({
             value={statusOptions.find(o => o.value === formData.status)}
             onChange={(val) => handleSelectChange("status", val?.value)}
             className={styles.field}
+            menuPortalTarget={null}
           />
 
           <VariantSelector 
@@ -134,39 +139,26 @@ export default function CreateHorseForm({
             onChange={(v) => handleSelectChange("variant", v)} 
           />
 
-          <div style={{ marginTop: '16px' }}>
-            <Switch
-              label={statsView ? "Raw Stats" : "Processed Stats"}
-              checked={!statsView}
-              onChange={(checked) => setStatsView(!checked)}
-              labelLeft={false}
+          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <StatRow
+              text="Speed"
+              fieldName="speed"
+              displayStats={displayStats}
+              handleTextChange={handleTextChange}
+            />
+            <StatRow
+              text="Health"
+              fieldName="health"
+              displayStats={displayStats}
+              handleTextChange={handleTextChange}
+            />
+            <StatRow
+              text="Jump"
+              fieldName="jump"
+              displayStats={displayStats}
+              handleTextChange={handleTextChange}
             />
           </div>
-
-          {statsView ? (
-            <StatsBox onStatsParsed={handleImportedStats} />
-          ) : (
-            <div style={{ marginTop: '8px' }}>
-              <StatRow
-                text="Speed"
-                fieldName="speed"
-                displayStats={displayStats}
-                handleTextChange={handleTextChange}
-              />
-              <StatRow
-                text="Health"
-                fieldName="health"
-                displayStats={displayStats}
-                handleTextChange={handleTextChange}
-              />
-              <StatRow
-                text="Jump"
-                fieldName="jump"
-                displayStats={displayStats}
-                handleTextChange={handleTextChange}
-              />
-            </div>
-          )}
         </div>
       </form>
     </div>

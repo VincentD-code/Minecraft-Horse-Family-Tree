@@ -23,12 +23,12 @@ export interface createHorseData {
   jump: number;
   variant: number;
 }
-
-export default function HorseCreateModalProps({
+export default function HorseCreateModal({
   isOpen,
   setIsOpen,
 }: HorseCreateModalProps) {
   const router = useRouter();
+
   const [horses, setHorses] = useState<Horse[]>([]);
   const [formData, setFormData] = useState<createHorseData>({
     name: "Name",

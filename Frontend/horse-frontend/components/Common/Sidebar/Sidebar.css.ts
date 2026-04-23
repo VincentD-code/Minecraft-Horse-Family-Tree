@@ -18,8 +18,8 @@ export const sidebar = style({
 });
 
 export const logo = style({
-  fontSize: "24px",
-  fontWeight: 800,
+  fontSize: vars.fontSize.xl,
+  fontWeight: vars.fontWeight.extrabold,
   marginBottom: vars.spacing.xl,
   display: "flex",
   alignItems: "center",
@@ -30,7 +30,7 @@ export const logo = style({
 });
 
 export const logoEmoji = style({
-  fontSize: "28px",
+  fontSize: vars.fontSize.xxl,
 });
 
 export const logoText = style({
@@ -53,8 +53,8 @@ export const navSection = style({
 });
 
 export const sectionLabel = style({
-  fontSize: "10px",
-  fontWeight: 700,
+  fontSize: vars.fontSize.xs,
+  fontWeight: vars.fontWeight.bold,
   textTransform: "uppercase",
   letterSpacing: "0.1em",
   color: "rgba(255, 255, 255, 0.4)",
@@ -70,8 +70,8 @@ export const navLink = style({
   borderRadius: vars.borderRadius.md,
   color: vars.color.secondary,
   textDecoration: "none",
-  fontSize: "14px",
-  fontWeight: 600,
+  fontSize: vars.fontSize.sm,
+  fontWeight: vars.fontWeight.semibold,
   transition: "all 0.2s",
   opacity: 0.8,
   ":hover": {
@@ -82,7 +82,7 @@ export const navLink = style({
 });
 
 export const navIcon = style({
-  fontSize: "18px",
+  fontSize: vars.fontSize.lg,
 });
 
 export const navLinkActive = style([
@@ -109,7 +109,7 @@ export const recentItem = style({
   borderRadius: vars.borderRadius.sm,
   color: "rgba(255, 255, 255, 0.7)",
   textDecoration: "none",
-  fontSize: "13px",
+  fontSize: vars.fontSize.sm,
   transition: "all 0.15s",
   ":hover": {
     color: vars.color.white,

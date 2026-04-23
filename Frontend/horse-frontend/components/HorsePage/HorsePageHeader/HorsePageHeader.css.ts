@@ -42,8 +42,8 @@ export const statusAlive = style({
   borderRadius: vars.borderRadius.full,
   backgroundColor: "#dcfce7",
   color: "#166534",
-  fontSize: "12px",
-  fontWeight: 700,
+  fontSize: vars.fontSize.xs,
+  fontWeight: vars.fontWeight.bold,
   textTransform: "uppercase",
   alignSelf: "flex-start",
 });
@@ -53,15 +53,15 @@ export const statusDead = style({
   borderRadius: vars.borderRadius.full,
   backgroundColor: "#fee2e2",
   color: "#991b1b",
-  fontSize: "12px",
-  fontWeight: 700,
+  fontSize: vars.fontSize.xs,
+  fontWeight: vars.fontWeight.bold,
   textTransform: "uppercase",
   alignSelf: "flex-start",
 });
 
 export const heading = style({
-  fontSize: "48px",
-  fontWeight: 900,
+  fontSize: vars.fontSize.display,
+  fontWeight: vars.fontWeight.black,
   margin: 0,
   letterSpacing: "-0.05em",
   color: vars.color.primary,
@@ -69,8 +69,8 @@ export const heading = style({
 });
 
 export const subHeading = style({
-  fontSize: "16px",
+  fontSize: vars.fontSize.md,
   color: vars.color.textMuted,
-  fontWeight: 500,
+  fontWeight: vars.fontWeight.medium,
   margin: 0,
 });

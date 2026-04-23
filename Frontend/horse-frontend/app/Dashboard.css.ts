@@ -12,14 +12,14 @@ export const header = style({
 });
 
 export const title = style({
-  fontSize: "32px",
-  fontWeight: 800,
+  fontSize: vars.fontSize.xxl,
+  fontWeight: vars.fontWeight.extrabold,
   color: vars.color.primary,
   marginBottom: vars.spacing.xs,
 });
 
 export const subtitle = style({
-  fontSize: "16px",
+  fontSize: vars.fontSize.md,
   color: vars.color.textMuted,
 });
 
@@ -42,16 +42,16 @@ export const statCard = style({
 });
 
 export const statLabel = style({
-  fontSize: "12px",
-  fontWeight: 700,
+  fontSize: vars.fontSize.xs,
+  fontWeight: vars.fontWeight.bold,
   color: vars.color.textMuted,
   textTransform: "uppercase",
   letterSpacing: "0.05em",
 });
 
 export const statValue = style({
-  fontSize: "28px",
-  fontWeight: 800,
+  fontSize: vars.fontSize.xxl,
+  fontWeight: vars.fontWeight.extrabold,
   color: vars.color.primary,
 });
 
@@ -73,8 +73,8 @@ export const sectionHeader = style({
 });
 
 export const sectionTitle = style({
-  fontSize: "20px",
-  fontWeight: 800,
+  fontSize: vars.fontSize.lg,
+  fontWeight: vars.fontWeight.extrabold,
   color: vars.color.primary,
   letterSpacing: "-0.01em",
 });
@@ -86,7 +86,7 @@ export const tableWrapper = style({
 export const table = style({
   width: "100%",
   borderCollapse: "collapse",
-  fontSize: "14px",
+  fontSize: vars.fontSize.sm,
 });
 
 export const th = style({
@@ -94,10 +94,10 @@ export const th = style({
   padding: `${vars.spacing.md} ${vars.spacing.lg}`,
   backgroundColor: vars.color.white,
   color: vars.color.textMuted,
-  fontSize: "12px",
+  fontSize: vars.fontSize.xs,
   textTransform: "uppercase",
   letterSpacing: "0.05em",
-  fontWeight: 700,
+  fontWeight: vars.fontWeight.bold,
   borderBottom: `1px solid ${vars.color.border}`,
 });
 
@@ -138,8 +138,8 @@ export const tr = style({
 export const badge = style({
   padding: "4px 12px",
   borderRadius: vars.borderRadius.full,
-  fontSize: "11px",
-  fontWeight: 700,
+  fontSize: vars.fontSize.xs,
+  fontWeight: vars.fontWeight.bold,
   textTransform: "uppercase",
 });
 

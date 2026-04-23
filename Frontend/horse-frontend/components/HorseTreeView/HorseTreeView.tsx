@@ -111,9 +111,10 @@ function TreeContent({
         minZoom={0.05}
         maxZoom={2.0}
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-        <Controls showInteractive={false} />
+        <Background key="background" variant={BackgroundVariant.Dots} gap={20} size={1} />
+        <Controls key="controls" showInteractive={false} />
         <MiniMap 
+          key="minimap"
           nodeStrokeWidth={3} 
           zoomable 
           pannable 
@@ -127,14 +128,14 @@ function TreeContent({
 
 export default function HorseTreeView(props: HorseTreeViewProps) {
   return (
-    <ReactFlowProvider>
-      <Suspense
-        fallback={
-          <div className={styles.loadingFallback}>Loading lineage...</div>
-        }
-      >
+    <Suspense
+      fallback={
+        <div className={styles.loadingFallback}>Loading lineage...</div>
+      }
+    >
+      <ReactFlowProvider>
         <TreeContent {...props} />
-      </Suspense>
-    </ReactFlowProvider>
+      </ReactFlowProvider>
+    </Suspense>
   );
 }

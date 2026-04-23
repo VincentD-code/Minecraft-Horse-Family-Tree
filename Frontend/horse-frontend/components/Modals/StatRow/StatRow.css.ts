@@ -1,4 +1,5 @@
 import { style } from "@vanilla-extract/css";
+import { vars } from "@/styles/theme.css";
 
 export const statRow = style({
   display: "flex",
@@ -6,25 +7,26 @@ export const statRow = style({
   flexDirection: "row",
   justifyContent: "space-between",
   alignItems: "center",
-  margin: "8px 0",
+  margin: `${vars.spacing.sm} 0`,
 });
 
 export const statInput = style({
   width: "120px",
-  padding: "8px",
-  borderRadius: "4px",
-  border: "1px solid #e5e7eb",
-  fontSize: "13px",
+  padding: vars.spacing.sm,
+  borderRadius: vars.borderRadius.sm,
+  border: `1px solid ${vars.color.border}`,
+  fontSize: vars.fontSize.sm,
+  fontFamily: vars.font.mono,
   ":focus": {
     outline: "none",
-    borderColor: "#2d4a3e",
+    borderColor: vars.color.primary,
   },
 });
 
 export const label = style({
   textTransform: "uppercase",
   letterSpacing: "0.1em",
-  fontSize: "11px",
-  fontWeight: 800,
-  color: "#2d4a3e",
+  fontSize: vars.fontSize.xs,
+  fontWeight: vars.fontWeight.extrabold,
+  color: vars.color.primary,
 });
