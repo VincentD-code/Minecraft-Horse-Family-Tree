@@ -1,13 +1,17 @@
 import { Handle, Position, NodeProps, Node } from '@xyflow/react';
 import { Horse } from '@/types/horse';
 import { translateStatsForDisplay } from '@/utils/translateRawStats';
+import { getHorseVariantImage } from '@/utils/variant';
 import * as styles from './HorseNode.css';
 import { CSSProperties } from 'react';
+import Image from 'next/image';
 
 export type HorseNodeData = {
   horse: Horse;
   label?: string;
   activeView?: 'speed' | 'jump' | 'health' | 'base';
+  statusView?: boolean;
+  compactView?: boolean;
 };
 
 // 2. Define the specialized Node type for this component
@@ -22,35 +26,77 @@ function getContrastColor(hex: string): string {
   return (yiq >= 128) ? '#000000' : '#ffffff';
 }
 
+function darkenColor(hex: string, amount: number): string {
+  hex = hex.replace('#', '');
+  if (hex.length === 3) {
+    hex = hex.split('').map(char => char + char).join('');
+  }
+  
+  const r = Math.max(0, Math.floor(parseInt(hex.substring(0, 2), 16) * (1 - amount)));
+  const g = Math.max(0, Math.floor(parseInt(hex.substring(2, 4), 16) * (1 - amount)));
+  const b = Math.max(0, Math.floor(parseInt(hex.substring(4, 6), 16) * (1 - amount)));
+  
+  const toHex = (c: number) => c.toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
 export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
-  const { horse, activeView } = data;
+  const { horse, activeView, statusView, compactView } = data;
   const {jump, health, speed, variant} = horse;
   const processedStats = translateStatsForDisplay({jump, health, speed, variant})
   const dnaColor = horse.hexColor || '#444444';
-  const textColor = getContrastColor(dnaColor);
+
+  const isDead = horse.status === 0;
+  const useShade = statusView && isDead;
+
+  // Calculate a darker version of the dnaColor for the background when dead
+  // Restore the "color things" by using dnaColor as background even in modern view
+  const backgroundColor = useShade ? darkenColor(dnaColor, 0.7) : dnaColor;
+  const borderColor = useShade ? dnaColor : darkenColor(dnaColor, 0.2);
+  const textColor = getContrastColor(backgroundColor);
 
   const containerStyle: CSSProperties = {
-    backgroundColor: dnaColor,
-    borderColor: dnaColor,
+    backgroundColor: backgroundColor,
+    borderColor: borderColor,
     borderStyle: 'solid',
-    borderWidth: '1px',
+    borderTopWidth: '2px',
+    borderRightWidth: '2px',
+    borderBottomWidth: '2px',
+    borderLeftWidth: compactView ? '2px' : '6px',
   };
 
-// Determine what label and value to show
   const getDisplayStat = () => {
     switch (activeView) {
       case 'jump':
-        return { label: 'Jump', value: `${processedStats.jump?.toFixed(2)} [blocks]` };
+        return { label: 'Jump', value: `${processedStats.jump?.toFixed(2)}` };
       case 'health':
-        return { label: 'Health', value: `${processedStats.health?.toFixed(2)} [HP]` };
+        return { label: 'HP', value: `${processedStats.health?.toFixed(2)}` };
       case 'speed':
       case 'base':
       default:
-        return { label: 'Speed', value: `${processedStats.speed?.toFixed(2)} [b/s]` };
+        return { label: 'Speed', value: `${processedStats.speed?.toFixed(2)}` };
     }
   };
 
   const display = getDisplayStat();
+  const horseImage = getHorseVariantImage(horse.variant);
+
+  if (compactView) {
+    return (
+      <div className={styles.nodeContainer} style={{ ...containerStyle, minWidth: '140px' }}>
+        <Handle type="target" position={Position.Top} className={styles.handleStyle} />
+        <div className={styles.contentWrapper} style={{ flexDirection: 'column', gap: '2px' }}>
+          <div className={styles.horseName} style={{ color: textColor, fontSize: '13px' }}>
+            {horse.name}
+          </div>
+          <div className={styles.statText} style={{ color: textColor, opacity: 0.9 }}>
+            {display.label}: {display.value}
+          </div>
+        </div>
+        <Handle type="source" position={Position.Bottom} className={styles.handleStyle} />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.nodeContainer} style={containerStyle}>
@@ -59,17 +105,28 @@ export default function CustomHorseNode({ data }: NodeProps<HorseNode>) {
         position={Position.Top} 
         className={styles.handleStyle} 
       />
-      
+
       <div className={styles.contentWrapper}>
-        {/* 3. Contrast applied directly to text elements */}
-        <div className={styles.horseName} style={{ color: textColor }}>
-          {horse.name}
+        <div className={styles.imageContainer} style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+          <Image 
+            src={horseImage} 
+            alt={horse.name} 
+            width={48} 
+            height={48} 
+            className={styles.horseImage}
+          />
         </div>
-        <div className={styles.statText} style={{ color: textColor }}>
-          {display.label}: {display.value}
+        <div className={styles.textDetails}>
+          <div className={styles.horseName} style={{ color: textColor }}>
+            {horse.name}
+          </div>
+          <div className={styles.statText} style={{ color: textColor, opacity: 0.8 }}>
+            <span className={styles.statLabel} style={{ color: 'inherit' }}>{display.label}:</span>
+            <span className={styles.statValue} style={{ color: 'inherit' }}>{display.value}</span>
+          </div>
         </div>
       </div>
-      
+
       <Handle 
         type="source" 
         position={Position.Bottom} 

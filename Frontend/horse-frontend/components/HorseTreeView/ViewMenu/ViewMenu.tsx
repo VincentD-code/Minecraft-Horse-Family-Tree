@@ -1,17 +1,31 @@
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useState } from "react";
 import { ViewMode } from "../HorseTreeView";
 import * as styles from "./ViewMenu.css";
 import { setCookie } from "cookies-next";
 import { useReactFlow } from "@xyflow/react";
-import Button from "@/components/Button/Button";
+import Button from "@/components/Common/Button/Button";
+import Switch from "@/components/Common/Switch/Switch";
 
 interface ViewMenuProps {
   setView: Dispatch<SetStateAction<ViewMode>>;
   view: ViewMode;
+  statusView: boolean;
+  setStatusView: Dispatch<SetStateAction<boolean>>;
+  compactView: boolean;
+  setCompactView: Dispatch<SetStateAction<boolean>>;
 }
 
-export default function ViewMenu({ setView, view }: ViewMenuProps) {
+export default function ViewMenu({ 
+  setView, 
+  view, 
+  statusView, 
+  setStatusView,
+  compactView,
+  setCompactView
+}: ViewMenuProps) {
   const { fitView } = useReactFlow();
+  const [isOpen, setIsOpen] = useState(true);
+
   const toggleView = (mode: ViewMode) => {
     setView(mode);
     setCookie("horse-tree-view", mode, { maxAge: 60 * 60 * 24 * 30 }); // Save for 30 days
@@ -19,9 +33,33 @@ export default function ViewMenu({ setView, view }: ViewMenuProps) {
     setTimeout(() => fitView({ duration: 800 }), 50);
   };
 
+  const handleStatusToggle = (checked: boolean) => {
+    setStatusView(checked);
+    setCookie("horse-status-view", checked ? "true" : "false", { maxAge: 60 * 60 * 24 * 30 });
+  };
+
+  const handleCompactToggle = (checked: boolean) => {
+    setCompactView(checked);
+    setCookie("horse-compact-view", checked ? "true" : "false", { maxAge: 60 * 60 * 24 * 30 });
+  };
+
   return (
-    <div className={styles.menuWrapper}>
-      <p className={styles.menuLabel}>Layout Mode</p>
+    <>
+      <button 
+        className={styles.toggleButton} 
+        onClick={() => setIsOpen(true)}
+        style={{ display: isOpen ? 'none' : 'flex' }}
+      >
+        <span>⚙️</span> View Options
+      </button>
+
+      <div className={`${styles.menuWrapper} ${!isOpen ? styles.menuClosed : ''}`}>
+        <div className={styles.menuHeader}>
+          <p className={styles.menuLabel} style={{ marginBottom: 0 }}>Layout & View</p>
+          <button className={styles.closeButton} onClick={() => setIsOpen(false)}>×</button>
+        </div>
+
+        <p className={styles.menuLabel} style={{ marginTop: "8px" }}>Layout Mode</p>
 
       <Button
         onClick={() => toggleView("base")}
@@ -32,6 +70,22 @@ export default function ViewMenu({ setView, view }: ViewMenuProps) {
         }
         text="Traditional Lineage Tree"
       />
+
+      <p className={styles.menuLabel} style={{ marginTop: "16px" }}>
+        View Filters
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <Switch 
+          label="Classic Node Style" 
+          checked={compactView} 
+          onChange={handleCompactToggle} 
+        />
+        <Switch 
+          label="Dead/Alive Highlight" 
+          checked={statusView} 
+          onChange={handleStatusToggle} 
+        />
+      </div>
 
       <p className={styles.menuLabel} style={{ marginTop: "8px" }}>
         Rank by Stat (Left to Right)
@@ -57,5 +111,6 @@ export default function ViewMenu({ setView, view }: ViewMenuProps) {
         text="🔍 Reset Zoom"
       />
     </div>
+    </>
   );
 }

@@ -7,6 +7,10 @@ import {
   Edge,
   OnNodesChange,
   OnEdgesChange,
+  MiniMap,
+  Controls,
+  Background,
+  BackgroundVariant,
 } from "@xyflow/react";
 import { useState, useCallback, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -15,8 +19,6 @@ import { getBaseLayout, getSortLayout } from "@/utils/layout";
 import "@xyflow/react/dist/style.css";
 import CustomHorseNode, { HorseNode } from "../HorseNode/HorseNode";
 import * as styles from "./HorseTreeView.css";
-import Button from "../Button/Button";
-import HorseCreateModal from "../Modals/HorseCreateModal/HorseCreateModal";
 import { Horse } from "@/types/horse";
 import ViewMenu from "./ViewMenu/ViewMenu";
 
@@ -35,25 +37,46 @@ function TreeContent({
   horses,
 }: HorseTreeViewProps) {
   const router = useRouter();
-  const [createModalOpen, setCreateModalOpen] = useState(false);
 
-  const [view, setView] = useState<ViewMode>(() => {
-    const savedView = getCookie("horse-tree-view") as ViewMode;
-    return savedView || "base";
-  });
+  const [view, setView] = useState<ViewMode>("base");
+  const [statusView, setStatusView] = useState<boolean>(false);
+  const [compactView, setCompactView] = useState<boolean>(false);
 
   const [nodes, setNodes] = useState<HorseNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
 
+  // Initial cookie sync
   useEffect(() => {
-    const newNodes =
+    const savedView = getCookie("horse-tree-view") as ViewMode;
+    if (savedView) setView(savedView);
+
+    const savedStatus = getCookie("horse-status-view");
+    if (savedStatus !== undefined) setStatusView(savedStatus === "true");
+
+    const savedCompact = getCookie("horse-compact-view");
+    if (savedCompact !== undefined) setCompactView(savedCompact === "true");
+  }, []);
+
+  useEffect(() => {
+    const layoutNodes =
       view === "base"
-        ? getBaseLayout(initialNodes, initialEdges)
-        : getSortLayout(initialNodes, view);
+        ? getBaseLayout(initialNodes, initialEdges, compactView)
+        : getSortLayout(initialNodes, view, compactView);
+
+    // Update nodes with statusView and compactView data
+    const newNodes = layoutNodes.map(node => ({
+      ...node,
+      data: {
+        ...node.data,
+        activeView: view,
+        statusView: statusView,
+        compactView: compactView
+      }
+    }));
 
     setNodes(newNodes);
     setEdges(initialEdges);
-  }, [view, initialNodes, initialEdges]);
+  }, [view, statusView, compactView, initialNodes, initialEdges]);
 
   const onNodesChange: OnNodesChange = useCallback(
     (changes) =>
@@ -68,13 +91,13 @@ function TreeContent({
 
   return (
     <div className={styles.container}>
-      <ViewMenu setView={setView} view={view} />
-
-      <Button onClick={() => setCreateModalOpen(true)} text="Add Horse" className={styles.addHorseButton} />
-      <HorseCreateModal
-        isOpen={createModalOpen}
-        setIsOpen={setCreateModalOpen}
-        horses={horses}
+      <ViewMenu 
+        setView={setView} 
+        view={view} 
+        statusView={statusView} 
+        setStatusView={setStatusView} 
+        compactView={compactView}
+        setCompactView={setCompactView}
       />
 
       <ReactFlow
@@ -85,23 +108,34 @@ function TreeContent({
         nodeTypes={nodeTypes}
         onNodeClick={(_event, node) => router.push(`/horses/${node.id}`)}
         fitView
-        minZoom={0.1}
+        minZoom={0.05}
         maxZoom={2.0}
-      />
+      >
+        <Background key="background" variant={BackgroundVariant.Dots} gap={20} size={1} />
+        <Controls key="controls" showInteractive={false} />
+        <MiniMap 
+          key="minimap"
+          nodeStrokeWidth={3} 
+          zoomable 
+          pannable 
+          maskColor="rgba(0, 0, 0, 0.1)"
+          style={{ height: 120, width: 200 }}
+        />
+      </ReactFlow>
     </div>
   );
 }
 
 export default function HorseTreeView(props: HorseTreeViewProps) {
   return (
-    <ReactFlowProvider>
-      <Suspense
-        fallback={
-          <div className={styles.loadingFallback}>Loading lineage...</div>
-        }
-      >
+    <Suspense
+      fallback={
+        <div className={styles.loadingFallback}>Loading lineage...</div>
+      }
+    >
+      <ReactFlowProvider>
         <TreeContent {...props} />
-      </Suspense>
-    </ReactFlowProvider>
+      </ReactFlowProvider>
+    </Suspense>
   );
 }

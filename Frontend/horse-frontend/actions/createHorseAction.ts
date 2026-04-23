@@ -33,7 +33,11 @@ export default async function createHorseAction(formData: createHorseData) {
     hexColor: hexColor,
     generation: generation,
   };
-  await createHorse(data);
+  const result = await createHorse(data);
 
   revalidatePath("/horses");
+
+  if (result) {
+    return { id: result, name: data.name };
+  }
 }

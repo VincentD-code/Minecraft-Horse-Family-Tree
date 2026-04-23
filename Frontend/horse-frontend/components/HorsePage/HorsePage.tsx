@@ -3,11 +3,11 @@ import { Horse } from "@/types/horse";
 import { useRouter } from "next/navigation";
 import * as styles from "./HorsePage.css";
 import { translateStatsForDisplay } from "@/utils/translateRawStats";
-import Button from "../Button/Button";
+import Button from "../Common/Button/Button";
 import HorsePageHeader from "./HorsePageHeader/HorsePageHeader";
 import StatsShapeGrid from "./StatsShapeGrid/StatsShapeGrid";
 import DetailsCard from "./DetailsCard/DetailsCard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HorseEditModal from "@/components/Modals/HorseEditModal/HorseEditModal";
 import editHorseAction from "@/actions/editHorseAction";
 import HorseDeleteModal from "@/components/Modals/HorseDeleteModal/HorseDeleteModal";
@@ -60,6 +60,27 @@ export default function HorsePage({
   const parent2Name = horse.parentId2
     ? horses.find((h) => h.id === horse.parentId2)?.name || "Unknown"
     : "None";
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("recently-viewed-horses");
+      let viewed: string[] = stored ? JSON.parse(stored) : [];
+      
+      // Remove current id if it already exists to move it to the front
+      viewed = viewed.filter(id => id !== horse.id);
+      
+      // Add current id to the front
+      viewed.unshift(horse.id);
+      
+      // Limit to 10
+      const updated = viewed.slice(0, 10);
+      
+      localStorage.setItem("recently-viewed-horses", JSON.stringify(updated));
+      
+      // Dispatch a storage event so the sidebar can update immediately
+      window.dispatchEvent(new Event("storage"));
+    }
+  }, [horse.id]);
 
   return (
     <main className={styles.pageWrapper}>

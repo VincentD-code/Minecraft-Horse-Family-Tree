@@ -3,6 +3,32 @@ import clientPromise from "./mongodb";
 import { createHorseRequest, editHorseRequest, Horse } from "@/types/horse";
 import { unstable_noStore as noStore } from "next/cache";
 
+export async function getRecentHorses(limit: number = 10): Promise<Horse[]> {
+  noStore();
+  try {
+    const horses = await getCollection();
+    const data = await horses.find({}).sort({ _id: -1 }).limit(limit).toArray();
+
+    return data.map((row: WithId<Document>) => ({
+      id: String(row._id).trim(),
+      name: row.name || "Unknown",
+      parentId1: row.parentId1 || null,
+      parentId2: row.parentId2 || null,
+      status: row.status,
+      speed: parseFloat(row.speed) || 0,
+      jump: parseFloat(row.jump) || 0,
+      health: parseFloat(row.health) || 0,
+      variant: parseFloat(row.variantId) || 0,
+      generation: parseFloat(row.generation) || 0,
+      hexColor: row.hexColor || "#000000",
+      dna: row.dna || {},
+    }));
+  } catch (error) {
+    console.error("Error fetching recent horses:", error);
+    return [];
+  }
+}
+
 export async function getAllHorses(): Promise<Horse[]> {
   noStore();
   try {
@@ -113,6 +139,72 @@ export async function deleteHorse(id: string): Promise<boolean> {
   } catch (error) {
     console.error("Error deleting horse", error);
     return false;
+  }
+}
+
+export async function getStablesStats() {
+  noStore();
+  try {
+    const horses = await getCollection();
+    const stats = await horses.aggregate([
+      {
+        $facet: {
+          total: [{ $count: "count" }],
+          alive: [{ $match: { status: { $ne: 0 } } }, { $count: "count" }],
+          averages: [
+            {
+              $group: {
+                _id: null,
+                avgSpeed: { $avg: "$speed" },
+                avgJump: { $avg: "$jump" },
+              },
+            },
+          ],
+        },
+      },
+    ]).toArray();
+
+    const result = stats[0];
+    return {
+      total: result.total[0]?.count || 0,
+      alive: result.alive[0]?.count || 0,
+      avgSpeed: result.averages[0]?.avgSpeed || 0,
+      avgJump: result.averages[0]?.avgJump || 0,
+    };
+  } catch (error) {
+    console.error("Error fetching stats:", error);
+    return { total: 0, alive: 0, avgSpeed: 0, avgJump: 0 };
+  }
+}
+
+export async function getHorsesByIds(ids: string[]): Promise<Horse[]> {
+  noStore();
+  if (!ids.length) return [];
+  try {
+    const horses = await getCollection();
+    const objectIds = ids.map(id => new ObjectId(id));
+    const data = await horses.find({ _id: { $in: objectIds } }).toArray();
+    
+    // Map back in the order requested
+    const horseMap = new Map<string, Horse>(data.map((row: WithId<Document>) => [row._id.toString(), {
+      id: row._id.toString(),
+      name: row.name || "Unknown",
+      parentId1: row.parentId1 || undefined,
+      parentId2: row.parentId2 || undefined,
+      status: row.status,
+      speed: parseFloat(row.speed) || 0,
+      jump: parseFloat(row.jump) || 0,
+      health: parseFloat(row.health) || 0,
+      variant: parseFloat(row.variantId) || 0,
+      generation: parseFloat(row.generation) || 0,
+      hexColor: row.hexColor || "#000000",
+      dna: row.dna || {},
+    }]));
+
+    return ids.map(id => horseMap.get(id)).filter((h): h is Horse => !!h);
+  } catch (error) {
+    console.error("Error fetching horses by ids:", error);
+    return [];
   }
 }
 
